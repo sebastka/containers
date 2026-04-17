@@ -2,7 +2,7 @@
 set -eux
 
 export VERSION="$(date +'%F')"
-export DOCKER_REPO='sebastka/vert-builder'
+export DOCKER_REPO='sebastka/vert'
 export RUN_AS='nobody'
 # export RUN_AS_TARGET='nobody'
 

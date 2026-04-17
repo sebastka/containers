@@ -1,12 +1,12 @@
 target "docker-metadata-action" {}
 
 variable "APP" {
-  default = "vert-builder"
+  default = "vert"
 }
 
 variable "VERSION" {
-  // renovate: datasource=custom.vert-builder depName=vert-builder
-  default = formatdate("YYYYMMDD", timestamp())
+  // renovate: datasource=custom.vert depName=vert
+  default = formatdate("YYYY.M.D", timestamp())
 }
 
 variable "SOURCE" {

@@ -1,4 +1,4 @@
-# vert-builder
+# vert
 
 - Official Dockerfile: https://github.com/VERT-sh/VERT/blob/main/Dockerfile
 - Docker-compose example: https://github.com/VERT-sh/VERT/blob/main/docker-compose.yml

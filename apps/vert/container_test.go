@@ -9,6 +9,6 @@ import (
 
 func Test(t *testing.T) {
 	ctx := context.Background()
-	image := testhelpers.GetTestImage("ghcr.io/sebastka/vert-builder:rolling")
+	image := testhelpers.GetTestImage("ghcr.io/sebastka/vert:rolling")
 	testhelpers.TestCommandSucceeds(t, ctx, image, nil, "nginx", "-version")
 }
