@@ -24,7 +24,8 @@ target "image" {
     PUB_ENV = "production"
     PUB_HOSTNAME = "vert.karlsen.app"
     PUB_PLAUSIBLE_URL = ""
-    PUB_VERTD_URL = "https://vertd.karlsen.app"
+    // PUB_VERTD_URL = "https://vertd.karlsen.app"
+    PUB_VERTD_URL = "https://vertd.vert.sh"
     PUB_DISABLE_ALL_EXTERNAL_REQUESTS = true
     PUB_DONATION_URL = "https://donations.vert.sh"
     PUB_STRIPE_KEY = "pk_live_51RDVmAGSxPVad6bQwzVNnbc28nlmzA30krLWk1fefCMpUPiSRPkavMMbGqa8A3lUaOCMlsUEVy2CWDYg0ip3aPpL00ZJlsMkf2"
