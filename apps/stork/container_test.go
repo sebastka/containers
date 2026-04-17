@@ -10,5 +10,5 @@ import (
 func Test(t *testing.T) {
 	ctx := context.Background()
 	image := testhelpers.GetTestImage("ghcr.io/sebastka/stork:rolling")
-	testhelpers.TestCommandSucceeds(t, ctx, image, nil, "/stork-server", "--version")
+	testhelpers.TestCommandSucceeds(t, ctx, image, nil, "stork-server", "--version")
 }
