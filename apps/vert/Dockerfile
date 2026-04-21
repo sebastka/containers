@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1.3.12-alpine AS builder
+FROM oven/bun:1.3.13-alpine AS builder
 ARG VERSION
 
 USER 65534:65533
