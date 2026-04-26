@@ -10,7 +10,7 @@ RUN printf -- 'alias ll="ls -alh"\n' >>/etc/profile && \
     apt-get install -y \
         vim nano \
         rsync duf htop screen \
-        xz-utils \
+        xz-utils procps \
         iputils-ping net-tools tcpdump nmap tshark \
         curl wget inetutils-telnet dnsutils ldnsutils \
         openssh-client ldap-utils \
