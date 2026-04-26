@@ -11,6 +11,7 @@ RUN printf -- 'alias ll="ls -alh"\n' >>/etc/profile && \
         vim nano \
         rsync duf htop screen \
         xz-utils procps \
+        mariadb-client postgresql-client \
         iputils-ping net-tools tcpdump nmap tshark \
         curl wget inetutils-telnet dnsutils ldnsutils \
         openssh-client ldap-utils \
