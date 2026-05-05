@@ -14,6 +14,14 @@
     },
     {
       customType: "regex",
+      description: "Process git-refs Digest Annotations in Docker Bake",
+      managerFilePatterns: ["/(^|/)docker-bake\\.hcl$/"],
+      matchStrings: [
+        'datasource=(?<datasource>git-refs) depName=(?<depName>\\S+) branch=(?<currentValue>\\S+)\\n.+ = "(?<currentDigest>[^"]+)"',
+      ],
+    },
+    {
+      customType: "regex",
       description: "Process Annotations in Dockerfiles",
       managerFilePatterns: ["/(^|/)Dockerfile$/"],
       matchStrings: [
