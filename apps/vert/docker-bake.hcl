@@ -5,7 +5,6 @@ variable "APP" {
 }
 
 variable "VERSION" {
-  // renovate: datasource=custom.vert depName=vert
   default = formatdate("YYYY.M.D", timestamp())
 }
 

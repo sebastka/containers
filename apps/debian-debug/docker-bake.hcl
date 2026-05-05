@@ -5,7 +5,6 @@ variable "APP" {
 }
 
 variable "VERSION" {
-  // renovate: datasource=custom.debian depName=debian
   default = formatdate("YYYY.M.D", timestamp())
 }
 

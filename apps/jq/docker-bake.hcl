@@ -5,7 +5,6 @@ variable "APP" {
 }
 
 variable "VERSION" {
-  // renovate: datasource=custom.jq depName=jq
   default = formatdate("YYYY.M.D", timestamp())
 }
 

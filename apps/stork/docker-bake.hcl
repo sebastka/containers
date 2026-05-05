@@ -5,7 +5,7 @@ variable "APP" {
 }
 
 variable "VERSION" {
-  // renovate: datasource=custom.stork depName=stork
+  // renovate: datasource=github-releases depName=isc-projects/stork
   default = "2.4.0"
 }
 
