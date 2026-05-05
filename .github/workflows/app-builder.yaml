@@ -250,13 +250,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Generate Token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
-        id: app-token
-        with:
-          app-id: ${{ secrets.BOT_APP_ID }}
-          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
-
       - name: Run App Tests
         uses: ./.github/actions/app-tests
         with:
@@ -274,7 +267,7 @@ jobs:
       - name: Post App Size Diff
         uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
         with:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           header: app-size-diff-${{ inputs.app }}
           message: |
             ${{ steps.app-size-diff.outputs.size-diff-markdown }}
@@ -292,13 +285,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Generate Token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
-        id: app-token
-        with:
-          app-id: ${{ secrets.BOT_APP_ID }}
-          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
-
       - name: Get App Options
         uses: ./.github/actions/app-options
         id: app-options
@@ -309,7 +295,7 @@ jobs:
         uses: ./.github/actions/release-tag
         id: release
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ github.token }}
 
       - name: Create Release
         uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
@@ -323,7 +309,7 @@ jobs:
             **Name**: [${{ inputs.app }}](https://github.com/${{ github.repository }}/pkgs/container/${{ inputs.app }})
             **Source**: <${{ steps.app-options.outputs.source }}>
           tag: ${{ steps.release.outputs.tag }}
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ github.token }}
 
   notify:
     if: ${{ inputs.release && !cancelled() }}
