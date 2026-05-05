@@ -4,9 +4,13 @@ variable "APP" {
   default = "element-admin"
 }
 
+variable "COMMIT" {
+  // renovate: datasource=git-refs depName=https://github.com/element-hq/element-admin branch=main
+  default = "8e62565df3c18183ea23dcceb6bd7f6ad85b4def"
+}
+
 variable "VERSION" {
-  // renovate: datasource=github-releases depName=element-hq/element-admin
-  default = "v0.1.11"
+  default = formatdate("YYYY.M.D", timestamp())
 }
 
 variable "SOURCE" {
@@ -19,7 +23,7 @@ group "default" {
 
 target "image" {
   inherits = ["docker-metadata-action"]
-  context   = "https://github.com/element-hq/element-admin.git#${VERSION}"
+  context   = "https://github.com/element-hq/element-admin.git#${COMMIT}"
   args = {
     VERSION = "${VERSION}"
   }
