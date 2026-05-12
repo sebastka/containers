@@ -38,6 +38,8 @@ jobs:
 
       - name: Sync Labels
         uses: EndBug/label-sync@52074158190acb45f3077f9099fea818aa43f97a # v2.3.3
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: .github/labels.yaml

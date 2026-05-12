@@ -79,6 +79,8 @@ jobs:
         name: Find Pull Request
         uses: juliangruber/find-pull-request-action@33d46d4ff90884bb23aaead16044125daaf733d8 # v1.11.0
         id: find-pull-request
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           labels: app/${{ matrix.app }}
