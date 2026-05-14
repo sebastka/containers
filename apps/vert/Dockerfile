@@ -29,5 +29,5 @@ RUN mkdir /tmp/vert \
     && (cd /tmp/vert && bun install) \
     && (cd /tmp/vert && bun run build)
 
-FROM nginxinc/nginx-unprivileged:1.30.0-alpine-slim
+FROM nginxinc/nginx-unprivileged:1.31.0-alpine-slim
 COPY --from=builder /tmp/vert/build /app
