@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM debian:trixie-20260505
+FROM debian:trixie-20260518
 ARG VERSION
 ARG USER=debian
 
