@@ -10,7 +10,7 @@ RUN apk add --no-cache curl \
     && apk add --no-cache \
         tzdata \
         isc-stork-server=~"${VERSION}" \
-        isc-stork-server-hook-ldap \
+        isc-stork-server-hook-ldap=~"${VERSION}" \
     && mkdir -p /var/lib/stork-server \
     && chown -R stork-server:stork-server /var/lib/stork-server
 
