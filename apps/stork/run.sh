@@ -1,10 +1,9 @@
 #!/bin/sh
 set -eux
 
-export VERSION='2.4.0'
-export DOCKER_REPO='sebastka/stork'
+export VERSION='2.4.1'
+export DOCKER_REPO='stork'
 export RUN_AS='stork-server'
-# export RUN_AS_TARGET='stork'
 
 docker image build \
     --progress=plain \
@@ -13,4 +12,5 @@ docker image build \
     --tag "${DOCKER_REPO}:latest" \
     .
 
-docker run --rm -it --user=$RUN_AS --entrypoint='' "${DOCKER_REPO}:latest" /bin/sh -l
+docker buildx bake
+docker run --rm -it --user=$RUN_AS --entrypoint='' "${DOCKER_REPO}:${VERSION}" /bin/sh -l
