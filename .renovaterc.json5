@@ -1,6 +1,7 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>home-operations/renovate-config"],
+  timezone: "Europe/Oslo",
   customManagers: [
     {
       customType: "regex",
@@ -31,7 +32,6 @@
       versioningTemplate: "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}",
     },
   ],
-  customDatasources: {},
   packageRules: [
     {
       description: ["Release Rules for App Updates"],
@@ -44,58 +44,37 @@
       semanticCommitType: "release",
     },
     {
+      description: ["Pin Digests for Dockerfile Base Images"],
+      matchDatasources: ["docker"],
+      matchFileNames: ["**/Dockerfile"],
+      pinDigests: true,
+    },
+    {
       description: ["Auto-merge App Updates"],
       matchFileNames: ["**/docker-bake.hcl"],
       automerge: true,
       automergeType: "pr",
-      ignoreTests: false,
+      schedule: ["after 5am and before 6am"],
     },
     {
-      description: ["Allowed Ubuntu Version for Base Images"],
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/ubuntu/"],
-      allowedVersions: "/24\\.04/",
+      description: ["Auto-merge GitHub Actions Updates at Night"],
+      matchDatasources: ["github-actions"],
+      automerge: true,
+      automergeType: "pr",
+      schedule: ["after 6am and before 7am"],
     },
     {
-      description: ["Allowed Alpine Version for Base Images"],
-      matchDatasources: ["docker"],
-      matchFileNames: ["**/Dockerfile"],
-      matchPackageNames: ["/alpine/"],
-      allowedVersions: "/3\\.23/",
-    },
-    {
-      description: ["Allowed Alpine Version for Postgres Base Images"],
-      matchDatasources: ["docker"],
-      matchPackageNames: ["/postgres/"],
-      allowedVersions: "/alpine3\\.23/",
-    },
-    {
-      description: ["Allowed Python Version for Alpine Base Images"],
+      description: ["Auto-merge Selected Dockerfile Base Images at Night"],
       matchDatasources: ["docker"],
       matchFileNames: ["**/Dockerfile"],
-      matchPackageNames: ["/python/"],
-      allowedVersions: "/3\\.14-alpine3\\.23/",
-    },
-    {
-      description: ["Allowed Python Version for Debian Base Images"],
-      matchDatasources: ["docker"],
-      matchFileNames: ["**/Dockerfile"],
-      matchPackageNames: ["/python/"],
-      allowedVersions: "/3\\.14-slim/",
-    },
-    {
-      description: ["Allowed Python Version for ESPHome Base Image"],
-      matchDatasources: ["docker"],
-      matchFileNames: ["apps/esphome/Dockerfile"],
-      matchPackageNames: ["/python/"],
-      allowedVersions: "/3\\.13-slim/",
-    },
-    {
-      description: ["Allowed Java Version for NZBHydra2 Base Image"],
-      matchDatasources: ["docker"],
-      matchFileNames: ["apps/nzbhydra2/Dockerfile"],
-      matchPackageNames: ["/amazoncorretto/"],
-      allowedVersions: "/17-alpine3\\.22/",
-    },
+      matchPackageNames: [
+        "docker.io/library/alpine",
+        "docker.io/library/debian"
+      ],
+      matchUpdateTypes: ["digest", "pinDigest", "patch", "minor", "major"],
+      automerge: true,
+      automergeType: "pr",
+      schedule: ["after 4am and before 5am"],
+    }
   ],
 }
