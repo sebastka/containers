@@ -10,6 +10,9 @@ inputs:
   to-app:
     description: App image to be compared to the baseline
     required: true
+  sizes-dir:
+    description: Directory of per-platform size measurements, one JSON file per platform
+    required: true
 
 outputs:
   size-diff-markdown:
@@ -25,7 +28,6 @@ runs:
         cat > package.json << 'EOF'
         {
           "dependencies": {
-            "execa": "^9.6.0",
             "filesize": "^11.0.2",
             "lodash": "^4.0.0",
             "markdown-table": "^3.0.4"
@@ -33,12 +35,10 @@ runs:
         }
         EOF
 
-    - name: Setup Node
-      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+    - name: Setup Mise
+      uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       with:
-        cache: npm
-        cache-dependency-path: package.json
-        node-version: 24.x
+        install_args: --locked
 
     - name: Setup Node Dependencies
       shell: bash
@@ -51,59 +51,39 @@ runs:
       env:
         FROM_APP: ${{ inputs.from-app }}
         TO_APP: ${{ inputs.to-app }}
+        SIZES_DIR: ${{ inputs.sizes-dir }}
       with:
         script: |-
-          const { execaSync } = require("execa");
+          const fs = require("fs");
+          const path = require("path");
           const { filesize } = require("filesize");
           const { markdownTable } = require("markdown-table");
           const _ = require("lodash");
 
           const fromApp = process.env.FROM_APP;
           const toApp = process.env.TO_APP;
+          const sizesDir = process.env.SIZES_DIR;
 
-          async function getSizes(app) {
+          // One file per build matrix platform, written by the Measure App Size
+          // step: { platform, previous, current }, sizes in bytes as reported by
+          // docker image inspect (uncompressed).
+          function readMeasurements(dir) {
               try {
-                  const { stdout } = execaSync("docker", ["manifest", "inspect", "-v", app]);
-                  const manifests = _.castArray(JSON.parse(stdout.trim()));
-
-                  return _(manifests)
-                      .map(m => {
-                          const platform = _.get(m, 'Descriptor.platform', {});
-
-                          const key = _.compact([
-                              platform.os,
-                              platform.architecture,
-                              platform.variant,
-                              platform["os.version"]
-                          ])
-                          .join("/");
-
-                          const layers = _.get(m, 'OCIManifest.layers') || _.get(m, 'layers', []);
-                          const total = _.sumBy(layers, 'size');
-
-                          return [key, total];
-                      })
-                      .fromPairs()
+                  return _(fs.readdirSync(dir))
+                      .filter(file => file.endsWith(".json"))
+                      .map(file => JSON.parse(fs.readFileSync(path.join(dir, file), "utf8")))
+                      .filter(entry => entry && entry.platform)
+                      .sortBy("platform")
                       .value();
               } catch (e) {
-                  core.error(`Failed to inspect ${app}: ${e.message}`);
-                  return {};
+                  core.error(`Failed to read size measurements from ${dir}: ${e.message}`);
+                  return [];
               }
           }
 
-          const fromSizes = await getSizes(fromApp);
-          const toSizes   = await getSizes(toApp);
-
-          const platforms = _(fromSizes)
-              .keys()
-              .union(_.keys(toSizes))
-              .filter(platform => platform && !platform.includes("unknown"))
-              .sort()
-              .value();
-
-          const platformRow = (platform) => {
-              const previous = _.get(fromSizes, platform, 0);
-              const current = _.get(toSizes, platform, 0);
+          const platformRow = (entry) => {
+              const previous = _.get(entry, "previous", 0);
+              const current = _.get(entry, "current", 0);
               const change = current - previous;
 
               const percentage = previous
@@ -117,7 +97,7 @@ runs:
               ])(change);
 
               return [
-                  platform,
+                  entry.platform,
                   filesize(previous),
                   filesize(current),
                   `${change >= 0 ? "+" : ""}${filesize(Math.abs(change))} (${percentage})`,
@@ -127,13 +107,13 @@ runs:
 
           const rows = [
               ["OS/Platform", "Previous", "Current", "Change", "Trend"],
-              ..._.map(platforms, platformRow)
+              ..._.map(readMeasurements(sizesDir), platformRow)
           ];
 
           const output = `## 📦 App Size Analysis
 
           > [!NOTE]
-          > Comparing \`${fromApp}\` ➔ \`${toApp}\`
+          > Comparing \`${fromApp}\` ➔ \`${toApp}\`, uncompressed
 
           ### 📈 Size Comparison Table
 

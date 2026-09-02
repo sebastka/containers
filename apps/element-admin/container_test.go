@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"testing"
 
-	"github.com/home-operations/containers/testhelpers"
+	helpers "github.com/home-operations/containers/tests"
 )
 
 func Test(t *testing.T) {
-	ctx := context.Background()
-	image := testhelpers.GetTestImage("ghcr.io/sebastka/element-admin:rolling")
-	testhelpers.TestCommandSucceeds(t, ctx, image, nil, "nginx", "-version")
+	image := helpers.GetTestImage("ghcr.io/sebastka/element-admin:rolling")
+	helpers.RequireCommandSucceeds(t, image, nil, "nginx", "-version")
 }
