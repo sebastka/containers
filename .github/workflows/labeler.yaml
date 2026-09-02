@@ -3,7 +3,6 @@
 name: Labeler
 
 on:
-  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
 
 permissions:
@@ -12,7 +11,7 @@ permissions:
 jobs:
   labeler:
     name: Labeler
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: write
@@ -26,17 +25,17 @@ jobs:
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
-          client-id: ${{ secrets.BOT_APP_ID }}
+          client-id: ${{ secrets.BOT_CLIENT_ID }}
           private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
 
-      - name: Setup Just
-        uses: extractions/setup-crate@7577c1bdf2d95e6d65d532788f35ed79d4b1dda2 # v2.0.1
+      - name: Setup Mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          repo: casey/just
+          install_args: --locked
 
       - name: Generate Label Config
-        run: |-
-          just generate-label-config
+        run: mise run generate-label-config
 
       - name: Labeler
         uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6.2.0

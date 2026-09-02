@@ -6,10 +6,19 @@ on:
   merge_group:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   prepare:
     name: Prepare
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     outputs:
       changed-files: ${{ steps.changed-files.outputs.changed_files }}
     steps:
@@ -26,14 +35,15 @@ jobs:
     name: Build ${{ matrix.app }}
     needs:
       - prepare
-    uses: ./.github/workflows/app-builder.yaml
+    uses: $/.github/workflows/app-builder.yaml
     permissions:
       attestations: write
       contents: read
       id-token: write
       packages: write
       pull-requests: write
-    secrets: inherit
+    secrets:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
     strategy:
       matrix:
         app: ${{ fromJSON(needs.prepare.outputs.changed-files) }}
@@ -43,19 +53,103 @@ jobs:
       app: ${{ matrix.app }}
       release: false
 
+  go-check:
+    name: Go Compile & Vet
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install_args: --locked
+
+      - name: Restore Go Modules
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+      - name: Compile tests
+        run: go test -run='^$' ./...
+
+      - name: Vet
+        run: go vet ./...
+
+  hadolint:
+    name: Hadolint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install_args: --locked
+
+      - name: Hadolint
+        run: git ls-files -z '*Dockerfile' | xargs -0 -r hadolint
+
+  workflow-lint:
+    name: Workflow Lint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install: false
+
+      - name: Resolve linter versions
+        id: tools
+        run: |-
+          echo "actionlint=$(mise config get tools.actionlint)" >> "$GITHUB_OUTPUT"
+          echo "zizmor=$(mise config get tools.zizmor)" >> "$GITHUB_OUTPUT"
+
+      - name: Lint workflows
+        uses: home-operations/.github/actions/workflow-lint@69cad1e407df8070dd9cfc3314551e473544014e # workflow-lint-v1.0.3
+        with:
+          actionlint-version: ${{ steps.tools.outputs.actionlint }}
+          zizmor-version: ${{ steps.tools.outputs.zizmor }}
+
   status:
     if: ${{ !cancelled() }}
     name: Build Success
     needs:
       - build
-    runs-on: ubuntu-latest
+      - go-check
+      - hadolint
+      - prepare
+      - workflow-lint
+    runs-on: ubuntu-24.04
+    permissions: {}
     steps:
       - name: Any jobs failed?
-        if: ${{ contains(needs.*.result, 'failure') }}
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: |-
           exit 1
 
       - name: All jobs passed or skipped?
-        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        if: ${{ !(contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
         run: |-
-          echo "All jobs passed or skipped" && echo "${{ toJSON(needs.*.result) }}"
+          echo "All jobs passed or skipped" && echo "$RESULTS"

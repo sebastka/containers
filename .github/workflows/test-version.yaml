@@ -16,7 +16,7 @@ permissions:
 jobs:
   test-version:
     name: Test Version (${{ inputs.version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
 
       - name: Get App Versions
-        uses: ./.github/actions/app-versions
+        uses: $/.github/actions/app-versions
         id: app-versions
         with:
           upstream-version: ${{ inputs.version }}
@@ -32,8 +32,11 @@ jobs:
       - name: Check Version Results
         env:
           INPUT_VERSION: ${{ inputs.version }}
+          IS_VALID_SEMVER: ${{ steps.app-versions.outputs.is-valid-semver }}
+          SEMANTIC_VERSION: ${{ steps.app-versions.outputs.semantic }}
+          RAW_VERSION: ${{ steps.app-versions.outputs.raw }}
         run: |-
           echo "Input Version: ${INPUT_VERSION}"
-          echo "Is Valid Semver: ${{ steps.app-versions.outputs.is-valid-semver }}"
-          echo "Semantic Version: ${{ steps.app-versions.outputs.semantic }}"
-          echo "Raw Version: ${{ steps.app-versions.outputs.raw }}"
+          echo "Is Valid Semver: ${IS_VALID_SEMVER}"
+          echo "Semantic Version: ${SEMANTIC_VERSION}"
+          echo "Raw Version: ${RAW_VERSION}"

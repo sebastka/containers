@@ -15,8 +15,8 @@ indent_size = 4
 [Dockerfile]
 indent_size = 4
 
-[*.go]
-indent_style = tabs
+[{*.go,go.mod,go.sum}]
+indent_style = tab
 indent_size = 4
 
 [{*.just,*.justfile}]

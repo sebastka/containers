@@ -1,0 +1,50 @@
+[settings]
+experimental = true
+
+[tools]
+actionlint = "1.7.12"
+gh = "2.93.0"
+go = "1.26.4"
+hadolint = "2.15.1"
+jq = "1.8.1"
+lefthook = "2.1.9"
+node = "24.20.0"
+shellcheck = "0.11.0"
+yq = "4.53.3"
+yamlfmt = "0.21.0"
+zizmor = "1.29.0"
+
+[tasks.local-build]
+description = "Build and test an app locally"
+dir = "{{config_root}}/.cache"
+usage = '''
+arg "<app>"
+'''
+run = '''
+rsync -aqIP {{config_root}}/include/ {{config_root}}/apps/"$usage_app"/ .
+docker buildx bake --no-cache --metadata-file docker-bake.json --set=*.output=type=docker --load
+TEST_IMAGE="$(jq -r '."image-local"."image.name" | sub("^docker.io/library/"; "")' docker-bake.json)" go test -v {{config_root}}/apps/"$usage_app"/...
+'''
+
+[tasks.remote-build]
+description = "Trigger a remote build"
+usage = '''
+arg "<app>"
+arg "[release]" help="release flag (default: false)"
+'''
+run = 'gh workflow run release.yaml -f app="$usage_app" -f release="${usage_release:-false}"'
+
+[tasks.generate-label-config]
+hide = true
+run = '''
+find "{{config_root}}/apps" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | while IFS= read -r app; do
+    yq -i ". += [{\"name\": \"app/$app\", \"color\": \"027fa0\"}]" {{config_root}}/.github/labels.yaml
+    yq -i ". += {\"app/$app\": [{\"changed-files\": [{\"any-glob-to-any-file\": [\"apps/$app/**\"]}]}]}" {{config_root}}/.github/labeler.yaml
+done
+'''
+
+[hooks]
+postinstall = [
+  "mkdir -p {{config_root}}/.cache",
+  "lefthook install",
+]
