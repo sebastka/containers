@@ -84,17 +84,30 @@
       matchFileNames: ["**/docker-bake.hcl"],
       automerge: true,
       automergeType: "pr",
-      schedule: ["after 5am and before 6am"],
     },
     {
-      description: ["Auto-merge GitHub Actions Updates at Night"],
+      description: ["Auto-merge GitHub Actions Updates"],
       matchDatasources: ["github-actions"],
       automerge: true,
       automergeType: "pr",
-      schedule: ["after 6am and before 7am"],
     },
     {
-      description: ["Auto-merge Selected Dockerfile Base Images at Night"],
+      description: ["Auto-merge All Minor and Digest Updates"],
+      matchUpdateTypes: ["minor", "digest", "pinDigest"],
+      automerge: true,
+      automergeType: "pr",
+    },
+    {
+      // The upstream preset treats a 0.x minor as a breaking change: it labels
+      // it type/major and routes it onto the major- branch prefix. Keep those
+      // out of the blanket rule above so they still get looked at by hand.
+      description: ["Do Not Auto-merge 0.x Minor Updates"],
+      matchUpdateTypes: ["minor"],
+      matchCurrentVersion: "/^v?0\\./",
+      automerge: false,
+    },
+    {
+      description: ["Auto-merge Selected Dockerfile Base Images"],
       matchDatasources: ["docker"],
       matchFileNames: ["**/Dockerfile"],
       matchPackageNames: [
@@ -104,7 +117,6 @@
       matchUpdateTypes: ["digest", "pinDigest", "patch", "minor", "major"],
       automerge: true,
       automergeType: "pr",
-      schedule: ["after 4am and before 5am"],
     }
   ],
 }
