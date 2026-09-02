@@ -278,17 +278,16 @@ jobs:
           DIGEST=$(docker buildx imagetools inspect "ghcr.io/${REPO_OWNER}/${APP}:${TAG}" --format '{{ json . }}' | jq --raw-output '.manifest.digest')
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
+  # No permissions block here on purpose, as with announce and size-diff:
+  # Upload Dependency Snapshot needs contents: write, which only release.yaml
+  # grants, and a nested job's request is validated against the caller even
+  # when the job is skipped, so declaring it would break the pull request path.
   attest:
     if: ${{ inputs.release }}
     name: Attest
     needs:
       - merge
     runs-on: ubuntu-24.04
-    permissions:
-      attestations: write
-      contents: read
-      id-token: write
-      packages: write
     env:
       APP: ${{ inputs.app }}
       REPO_OWNER: ${{ github.repository_owner }}
