@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"testing"
 
-	"github.com/home-operations/containers/testhelpers"
+	helpers "github.com/home-operations/containers/tests"
 )
 
 func Test(t *testing.T) {
-	ctx := context.Background()
-	image := testhelpers.GetTestImage("ghcr.io/sebastka/frankenphp:rolling")
-	testhelpers.TestCommandSucceeds(t, ctx, image, nil, "uname", "-a")
+	image := helpers.GetTestImage("ghcr.io/sebastka/debian-debug:rolling")
+	helpers.RequireCommandSucceeds(t, image, nil, "uname", "-a")
 }

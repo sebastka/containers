@@ -4,6 +4,9 @@ FROM docker.io/library/debian:13@sha256:f324c7ff54321e8d9c588493a20244965938ce0a
 ARG VERSION
 ARG USER=debian
 
+# Recommends are wanted here: this is a toolbox image, and nmap, tshark and
+# dnsutils pull useful companions in that way.
+# hadolint ignore=DL3015
 RUN printf -- 'alias ll="ls -alh"\n' >>/etc/profile && \
     \
     apt-get update && \
@@ -22,4 +25,4 @@ RUN printf -- 'alias ll="ls -alh"\n' >>/etc/profile && \
 
 USER ${USER}
 WORKDIR /home/${USER}
-CMD ["sleep", "infinity"]
+CMD ["sh", "-c", "while [ ! -e /tmp/continue ]; do sleep 3; done"]
