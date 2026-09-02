@@ -36,7 +36,22 @@
       versioningTemplate: "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}",
     },
   ],
+  customDatasources: {
+    // ISC tags releases on GitHub before publishing the matching Alpine
+    // packages, so tracking github-tags proposes versions that cannot install.
+    // This reads what is actually available from the Cloudsmith repository.
+    stork: {
+      defaultRegistryUrlTemplate: "https://api.cloudsmith.io/v1/packages/isc/stork/?query=name:{{packageName}}+distribution:alpine&page_size=100",
+      format: "json",
+      transformTemplates: ['{"releases": $distinct($[name="{{packageName}}"].{"version": version})}'],
+    },
+  },
   packageRules: [
+    {
+      description: ["Strip the apk build suffix from Cloudsmith stork versions"],
+      matchDatasources: ["custom.stork"],
+      extractVersion: "^(?<version>\\d+\\.\\d+\\.\\d+)\\.",
+    },
     {
       description: ["Drop the minimum release age set by the upstream groups preset"],
       matchManagers: ["github-actions", "mise"],
