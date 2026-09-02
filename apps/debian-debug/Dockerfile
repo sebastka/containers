@@ -25,4 +25,4 @@ RUN printf -- 'alias ll="ls -alh"\n' >>/etc/profile && \
 
 USER ${USER}
 WORKDIR /home/${USER}
-CMD ["sh", "-c", "while [ ! -e /tmp/continue ]; do sleep 3; done"]
+CMD ["sh", "-c", "trap 'exit 0' TERM INT; while [ ! -e /tmp/continue ]; do sleep 3 & wait $!; done"]
