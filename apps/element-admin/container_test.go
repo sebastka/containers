@@ -9,4 +9,5 @@ import (
 func Test(t *testing.T) {
 	image := helpers.GetTestImage("ghcr.io/sebastka/element-admin:rolling")
 	helpers.RequireCommandSucceeds(t, image, nil, "nginx", "-version")
+	helpers.RequireFileExists(t, image, "/usr/share/nginx/html/index.html")
 }
