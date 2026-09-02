@@ -1,6 +1,8 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>home-operations/renovate-config"],
+  // No Helm charts in this repo, and Mend-hosted Renovate does not allow these commands
+  ignorePresets: ["github>home-operations/renovate-config:helmPostUpgradeTasks.json5"],
   timezone: "Europe/Oslo",
   reviewers: [],
   reviewersFromCodeOwners: false,
@@ -36,6 +38,11 @@
   ],
   packageRules: [
     {
+      description: ["Drop the minimum release age set by the upstream groups preset"],
+      matchManagers: ["github-actions", "mise"],
+      minimumReleaseAge: null,
+    },
+    {
       description: ["Release Rules for App Updates"],
       addLabels: ["app/{{parentDir}}"],
       additionalBranchPrefix: "{{parentDir}}-",
@@ -44,6 +51,12 @@
       matchFileNames: ["**/docker-bake.hcl", "**/Dockerfile"],
       semanticCommitScope: "{{parentDir}}",
       semanticCommitType: "release",
+    },
+    {
+      description: ["Digest Rules for App Updates"],
+      matchFileNames: ["**/docker-bake.hcl", "**/Dockerfile"],
+      matchUpdateTypes: ["digest", "pinDigest"],
+      commitMessageExtra: "( {{currentDigestShort}} → {{newDigestShort}} )",
     },
     {
       description: ["Pin Digests for Dockerfile Base Images"],
