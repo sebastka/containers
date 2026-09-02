@@ -6,7 +6,7 @@ variable "APP" {
 
 variable "VERSION" {
   // renovate: datasource=github-tags depName=isc-projects/stork
-  default = "2.5.0"
+  default = "2.5.1"
 }
 
 variable "SOURCE" {
