@@ -86,8 +86,14 @@
       automergeType: "pr",
     },
     {
+      // matchManagers, not matchDatasources: the github-actions manager emits
+      // github-tags / github-digest datasources, so no datasource is named
+      // github-actions and a matchDatasources rule here never matches anything.
+      // Majors stay manual: new major action releases can change inputs or
+      // runtimes.
       description: ["Auto-merge GitHub Actions Updates"],
-      matchDatasources: ["github-actions"],
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["patch", "minor", "digest", "pinDigest"],
       automerge: true,
       automergeType: "pr",
     },
