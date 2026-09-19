@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 
-FROM docker.io/library/debian:13@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1
+FROM docker.io/library/debian:13@sha256:181ecf074fdc824a42be4f84a7be2eba33c4ac298ae1ab15a4e69ed052bd9ec0
 ARG VERSION
 ARG USER=debian
 
