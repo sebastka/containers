@@ -89,6 +89,7 @@ jobs:
       security-events: write
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      DHI_TOKEN: ${{ secrets.DHI_TOKEN }}
     strategy:
       matrix:
         app: ${{ fromJSON(needs.changed.outputs.apps) }}
