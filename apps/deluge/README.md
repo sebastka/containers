@@ -49,8 +49,8 @@ The entrypoint (`assets/entrypoint.py`) starts `$DELUGE_BIN`, `deluged` (default
   `requirements.txt`. The build fails when the two disagree.
 - **Python packages**: Renovate updates `requirements.txt`, hashes included; it keeps setuptools
   below 81 (`.renovaterc.json5`).
-- **libtorrent, Boost, 7-Zip, UnRAR and DB-IP**: `.github/workflows/deluge-downloads.yaml` runs
-  `scripts/update-downloads.py` every Monday (or by hand, Actions > Deluge Downloads) and opens a
+- **libtorrent, Boost, 7-Zip, UnRAR and DB-IP**: `.github/workflows/app-downloads.yaml` runs
+  `scripts/update-downloads.py` every Monday (or by hand, Actions > App Downloads) and opens a
   pull request with the new versions and their sha256. libtorrent stays on the 2.0 series. UnRAR
   betas are skipped: the script takes the newest release RARLAB lists as stable. DB-IP moves to the
   new month once it is published.

@@ -9,7 +9,7 @@
 # binding, which then only needs musl and the runtime image's OpenSSL.
 FROM dhi.io/python:3.14.8-alpine3.24-dev@sha256:df552b9c5634f917614a73c7687a6aebfff432f8ea7a6db754e953e618dc51c1 AS libtorrent
 
-# Updated with their sha256 by .github/workflows/deluge-downloads.yaml
+# Updated with their sha256 by .github/workflows/app-downloads.yaml
 ARG BOOST_VERSION=1.92.0
 ARG BOOST_SHA256=ea7b982002cc9dfbe59b0b217b206f470dc75f3de0bb2973d844118934d82411
 ARG LIBTORRENT_VERSION=2.0.15
@@ -66,7 +66,7 @@ ARG VERSION
 ARG TARGETARCH
 
 # 7-Zip's own static Linux build, as 7zr for the Extractor plugin (.7z)
-# 7-Zip, UnRAR and DB-IP: updated with their sha256 by .github/workflows/deluge-downloads.yaml
+# 7-Zip, UnRAR and DB-IP: updated with their sha256 by .github/workflows/app-downloads.yaml
 ARG SEVENZIP_VERSION=26.04
 ARG SEVENZIP_SHA256_AMD64=fc0327ba27e89bd086cf426dff17d77de582953cdbbc10a6576540a06853ffcd
 ARG SEVENZIP_SHA256_ARM64=5b0ac3aa91c1e3499f011d6af69d7f6b4de3ef2f011d9e2ff44c58ebd04aa388

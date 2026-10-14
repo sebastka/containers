@@ -1,0 +1,43 @@
+#!/opt/paperless/bin/python
+"""Waits until paperless's PostgreSQL database accepts connections: pg_isready's job, with psycopg,
+which the image already has, rather than the PostgreSQL client.
+
+Uses the PAPERLESS_DB* variables paperless itself reads. Gives up after $PAPERLESS_DB_TIMEOUT
+seconds (default 300). Does nothing for SQLite (no PAPERLESS_DBHOST).
+"""
+
+import os
+import sys
+import time
+
+import psycopg
+
+
+def main():
+    host = os.environ.get('PAPERLESS_DBHOST')
+    if not host:
+        print('No PAPERLESS_DBHOST: SQLite, nothing to wait for')
+        return
+    deadline = time.monotonic() + float(os.environ.get('PAPERLESS_DB_TIMEOUT', '300'))
+    while True:
+        try:
+            psycopg.connect(
+                host=host,
+                port=os.environ.get('PAPERLESS_DBPORT', '5432'),
+                dbname=os.environ.get('PAPERLESS_DBNAME', 'paperless'),
+                user=os.environ.get('PAPERLESS_DBUSER', 'paperless'),
+                password=os.environ.get('PAPERLESS_DBPASS', 'paperless'),
+                sslmode=os.environ.get('PAPERLESS_DBSSLMODE', 'prefer'),
+                connect_timeout=5,
+            ).close()
+            print(f'{host}: accepting connections')
+            return
+        except psycopg.OperationalError as error:
+            if time.monotonic() > deadline:
+                sys.exit(f'{host}: still unavailable, giving up: {error}')
+            print(f'{host}: waiting ({str(error).strip().splitlines()[0]})')
+            time.sleep(2)
+
+
+if __name__ == '__main__':
+    main()
