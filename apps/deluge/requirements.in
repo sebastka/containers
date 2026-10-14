@@ -1,8 +1,7 @@
 # Input to requirements.txt (see its header). Keep deluge in step with VERSION in docker-bake.hcl.
+# libtorrent is not here: the Dockerfile builds it, with its Python binding, from source.
 deluge==2.2.0
-# The only libtorrent with musl wheels; they stop at Python 3.13, hence the 3.13 base images
-libtorrent==2.1.1
 # Deluge 2.2 discovers its plugins through pkg_resources, removed in setuptools 81
 setuptools<81
-# Reads the GeoIP database (GeoIP.py)
+# Reads the GeoIP database (assets/GeoIP.py)
 maxminddb

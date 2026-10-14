@@ -17,8 +17,8 @@ func Test(t *testing.T) {
 		},
 	})
 
-	// What this image adds over a plain pip install: plugins found, libtorrent loads, country
-	// lookups work, and the Extractor plugin's tools are there (see README.md)
+	// What this image adds over a plain pip install: plugins found, our libtorrent 2.0 build
+	// loads, country lookups work, and the Extractor plugin's tools are there (see README.md)
 	helpers.RequireCommandSucceeds(t, image, nil, "/opt/deluge/bin/python", "-c", `
 import shutil, subprocess, sys
 
@@ -35,6 +35,9 @@ scanner.scan_for_plugins()
 missing = {"AutoAdd", "Extractor", "Label", "Stats"} - set(scanner.available_plugins)
 if missing:
     sys.exit(f"plugins not found: {sorted(missing)}")
+
+if not libtorrent.__version__.startswith("2.0."):
+    sys.exit(f"libtorrent {libtorrent.__version__}, expected 2.0.x (built in the Dockerfile)")
 
 country = GeoIP("/usr/share/GeoIP/dbip-country-lite.mmdb", 0).country_code_by_addr("8.8.8.8")
 if len(country) != 2:

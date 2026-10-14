@@ -1,7 +1,7 @@
 # Deluge
 
 Deluge on [Docker Hardened Images](https://hub.docker.com/hardened-images/catalog/dhi/python):
-built in `dhi.io/python:3.13-alpine3.24-dev`, run on `dhi.io/python:3.13-alpine3.24` (no shell,
+built in `dhi.io/python:3.14-alpine3.24-dev`, run on `dhi.io/python:3.14-alpine3.24` (no shell,
 no package manager, user 65532). Replaces `ghcr.io/home-operations/deluge`, whose plugins do not
 load (Alpine's package bug, [ALPINE_BUG_REPORT.md](ALPINE_BUG_REPORT.md)) and whose GeoIP lookups
 never worked.
@@ -11,8 +11,12 @@ never worked.
 - **Deluge**, from PyPI, in a virtualenv at `/opt/deluge` (on `PATH`): `deluged`, `deluge-web`,
   `deluge-console`. Every Python package is pinned with its hash in `requirements.txt`, generated
   from `requirements.in` (command in its header).
-  - **libtorrent 2.1.1**: the only release with musl wheels, which stop at Python 3.13; hence 3.13
-    rather than 3.14. Deluge 2.2 was released against libtorrent 2.0.
+  - **libtorrent 2.0**, built from source with its Python binding (the `libtorrent` stage).
+    Deluge 2.2 requires libtorrent >= 1.2 and also runs on 2.1, but was mostly developed against
+    2.0, the more conservative choice; PyPI only has musl wheels of 2.1, up to Python 3.13.
+    Boost.Python, libtorrent and the C++ runtime are linked statically into the binding, which
+    only needs musl and the runtime image's OpenSSL, so OpenSSL fixes come with DHI's updates. The
+    stage only rebuilds when libtorrent or Boost change (build cache).
   - **setuptools < 81**: Deluge 2.2 finds its plugins through `pkg_resources`, which setuptools 81
     removed. With it, the bundled (zipped) plugin eggs load as they should.
   - **`patches/pyopenssl-26.patch`**, from Alpine: Deluge 2.2 does not start with pyOpenSSL 25+.
@@ -45,10 +49,11 @@ The entrypoint (`assets/entrypoint.py`) starts `$DELUGE_BIN`, `deluged` (default
   `requirements.txt`. The build fails when the two disagree.
 - **Python packages**: Renovate updates `requirements.txt`, hashes included; it keeps setuptools
   below 81 (`.renovaterc.json5`).
-- **7-Zip, UnRAR and DB-IP**: `.github/workflows/deluge-downloads.yaml` runs
+- **libtorrent, Boost, 7-Zip, UnRAR and DB-IP**: `.github/workflows/deluge-downloads.yaml` runs
   `scripts/update-downloads.py` every Monday (or by hand, Actions > Deluge Downloads) and opens a
-  pull request with the new versions and their sha256. UnRAR betas are skipped: the script takes
-  the newest release RARLAB lists as stable. DB-IP moves to the new month once it is published.
+  pull request with the new versions and their sha256. libtorrent stays on the 2.0 series. UnRAR
+  betas are skipped: the script takes the newest release RARLAB lists as stable. DB-IP moves to the
+  new month once it is published.
   The script also runs locally, from the repository root.
 
 Once Alpine's package is fixed and home-operations' image ships it, going back to their image is
