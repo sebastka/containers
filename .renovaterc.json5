@@ -51,6 +51,15 @@
       transformTemplates: ['{"releases": $distinct($[name="{{packageName}}"].{"version": version})}'],
     },
   },
+  hostRules: [
+    {
+      description: "Docker Hardened Images (dhi.io), base of apps/deluge. DHI authenticates with Docker Hub accounts: a Docker Hub token, as a Renovate secret",
+      matchHost: "dhi.io",
+      hostType: "docker",
+      username: "sebastka",
+      password: "{{ secrets.DOCKERHUB_TOKEN }}",
+    },
+  ],
   packageRules: [
     {
       description: ["Strip the apk build suffix from Cloudsmith stork versions"],
@@ -128,6 +137,18 @@
       matchUpdateTypes: ["digest", "pinDigest", "patch", "minor", "major"],
       automerge: true,
       automergeType: "pr",
-    }
+    },
+    {
+      description: ["Deluge 2.2 finds its plugins through pkg_resources, removed in setuptools 81 (apps/deluge)"],
+      matchFileNames: ["apps/deluge/requirements.txt"],
+      matchPackageNames: ["setuptools"],
+      allowedVersions: "<81",
+    },
+    {
+      description: ["Deluge's version lives in docker-bake.hcl and requirements.txt: one PR for both (the build checks they agree)"],
+      matchFileNames: ["apps/deluge/docker-bake.hcl", "apps/deluge/requirements.txt"],
+      matchPackageNames: ["deluge"],
+      groupName: "deluge",
+    },
   ],
 }

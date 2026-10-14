@@ -54,6 +54,7 @@ jobs:
       pull-requests: write
     secrets:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      DHI_TOKEN: ${{ secrets.DHI_TOKEN }}
     strategy:
       matrix:
         app: ${{ fromJSON(needs.prepare.outputs.changed-files) }}
