@@ -45,11 +45,11 @@ The entrypoint (`assets/entrypoint.py`) starts `$DELUGE_BIN`, `deluged` (default
   `requirements.txt`. The build fails when the two disagree.
 - **Python packages**: Renovate updates `requirements.txt`, hashes included; it keeps setuptools
   below 81 (`.renovaterc.json5`).
-- **7-Zip**: Renovate bumps `SEVENZIP_VERSION`; update both sha256 values with it (the release
-  lists them).
-- **UnRAR**: `UNRAR_VERSION` and `UNRAR_SHA256` by hand, from https://www.rarlab.com/rar_add.htm.
-  Skip betas: `version.hpp` in the tarball shows the version.
-- **DB-IP**: `DBIP_MONTH` and `DBIP_SHA256` by hand, monthly or when convenient.
+- **7-Zip, UnRAR and DB-IP**: `.github/workflows/deluge-downloads.yaml` runs
+  `scripts/update-downloads.py` every Monday (or by hand, Actions > Deluge Downloads) and opens a
+  pull request with the new versions and their sha256. UnRAR betas are skipped: the script takes
+  the newest release RARLAB lists as stable. DB-IP moves to the new month once it is published.
+  The script also runs locally, from the repository root.
 
 Once Alpine's package is fixed and home-operations' image ships it, going back to their image is
 an option, at the cost of the hardened base, GeoIP and the static archive tools.
