@@ -9,7 +9,7 @@ ARG VERSION
 ARG TARGETARCH
 
 # 7-Zip's own static Linux build, as 7zr for the Extractor plugin (.7z)
-# renovate: datasource=github-releases depName=ip7z/7zip versioning=loose
+# 7-Zip, UnRAR and DB-IP: updated with their sha256 by .github/workflows/deluge-downloads.yaml
 ARG SEVENZIP_VERSION=26.04
 ARG SEVENZIP_SHA256_AMD64=fc0327ba27e89bd086cf426dff17d77de582953cdbbc10a6576540a06853ffcd
 ARG SEVENZIP_SHA256_ARM64=5b0ac3aa91c1e3499f011d6af69d7f6b4de3ef2f011d9e2ff44c58ebd04aa388
