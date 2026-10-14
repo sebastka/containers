@@ -3,7 +3,7 @@
 [paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) on
 [Docker Hardened Images](https://hub.docker.com/hardened-images/catalog/dhi/python), Debian 13
 (trixie) as upstream: built in `dhi.io/python:3.14-debian13-dev`, run on `dhi.io/python:3.14-debian13`
-(no shell, no package manager, user 65532). Replaces `ghcr.io/paperless-ngx/paperless-ngx` without
+(no shell, no package manager). Runs as `paperless` (1000), as upstream. Replaces `ghcr.io/paperless-ngx/paperless-ngx` without
 its s6 supervision: each container runs its own command, as the homelab manifests already do.
 About 1.4 GB uncompressed, against 2.5 GB for upstream's image.
 

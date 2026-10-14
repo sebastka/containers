@@ -25,6 +25,10 @@ for helper in ("paperless-tessdata", "paperless-wait-for-db", "wait-for-redis.py
     if not shutil.which(helper):
         sys.exit(f"{helper} not on PATH")
 
+# The running user and group resolve (Celery assumes root, and warns, when the group does not)
+import grp, pwd
+print("user:", pwd.getpwuid(os.getuid()).pw_name, "group:", grp.getgrgid(os.getgid()).gr_name)
+
 import granian, magic, ocrmypdf, pikepdf, psycopg, sqlite_vec, zxingcpp
 if psycopg.pq.__impl__ != "c":
     sys.exit(f"psycopg implementation: {psycopg.pq.__impl__}, expected c")

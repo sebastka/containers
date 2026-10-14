@@ -102,6 +102,7 @@ RUN \
 # allowed, SVG/MVG/PostScript and URL delegates refused). Trixie has ImageMagick 7, which reads
 # /etc/ImageMagick-7: upstream's image still writes the policy to ImageMagick-6, where it is unused.
 COPY --from=dhi.io/python:3.14.8-debian13@sha256:2af3a6573fdecaaeb5c5a8073ced2d511cafa38b4b1205ee8d4ab820b866bd20 /var/lib/dpkg /runtime-dpkg
+COPY --from=dhi.io/python:3.14.8-debian13@sha256:2af3a6573fdecaaeb5c5a8073ced2d511cafa38b4b1205ee8d4ab820b866bd20 /etc/passwd /etc/group /runtime-etc/
 COPY --from=jbig2enc /out/jbig2 /rootfs/usr/local/bin/jbig2
 RUN \
     python3 scripts/stage-packages.py /runtime-dpkg /rootfs ${RUNTIME_PACKAGES} \
@@ -113,7 +114,11 @@ RUN \
     && install -m 755 assets/paperless-tessdata assets/paperless-wait-for-db /rootfs/usr/local/bin/ \
     && rm -rf /usr/src/paperless/docker /usr/src/paperless/uv.lock /usr/src/paperless/requirements.txt \
     && python3 scripts/deduplicate.py /usr/src/paperless \
-    && mkdir -p /usr/src/paperless/data /usr/src/paperless/media /usr/src/paperless/consume /usr/src/paperless/export
+    && mkdir -p /usr/src/paperless/data /usr/src/paperless/media /usr/src/paperless/consume /usr/src/paperless/export \
+    && install -D -m 644 /runtime-etc/passwd /rootfs/etc/passwd \
+    && install -D -m 644 /runtime-etc/group /rootfs/etc/group \
+    && echo 'paperless:x:1000:1000:paperless:/usr/src/paperless:/usr/sbin/nologin' >> /rootfs/etc/passwd \
+    && echo 'paperless:x:1000:' >> /rootfs/etc/group
 
 
 FROM dhi.io/python:3.14.8-debian13@sha256:2af3a6573fdecaaeb5c5a8073ced2d511cafa38b4b1205ee8d4ab820b866bd20
@@ -127,10 +132,11 @@ ENV PATH="/opt/paperless/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 
 COPY --from=build /rootfs/ /
 COPY --from=build /opt/paperless /opt/paperless
-COPY --from=build --chown=65532:65532 /usr/src/paperless /usr/src/paperless
+COPY --from=build --chown=1000:1000 /usr/src/paperless /usr/src/paperless
 
-# The runtime image's non-root user
-USER 65532:65532
+# paperless (1000), as upstream: the IDs deployments of upstream's image already run as. With an
+# /etc/group entry, Celery's start-up check finds the group; without one it assumes root and warns.
+USER 1000:1000
 WORKDIR /usr/src/paperless/src
 EXPOSE 8000
 
