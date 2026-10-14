@@ -73,15 +73,18 @@ RUN \
 # bsdunzip, from Alpine. bsdtar decompresses by itself, where GNU tar would run gzip, bzip2 and xz.
 # Dynamically linked: their libraries go to a directory of their own, found through their RUNPATH,
 # so they cannot replace the runtime image's (Python's libssl, libz...). musl itself is the
-# runtime's.
+# runtime's. musl's loader lists the libraries (`--list`, what ldd wraps): the -dev image has no
+# ldd. Written to files rather than piped, since sh here has no pipefail.
 RUN \
     mkdir -p /rootfs/usr/lib/archive-tools \
     && for bin in bsdtar bsdunzip; do install -m 755 "/usr/bin/${bin}" "/rootfs/usr/local/bin/${bin}"; done \
     && ln -s bsdtar /rootfs/usr/local/bin/tar \
     && ln -s bsdunzip /rootfs/usr/local/bin/unzip \
-    && ldd /usr/bin/bsdtar /usr/bin/bsdunzip \
-        | awk '$2 == "=>" && $3 !~ /ld-musl/ { print $3 }' | sort -u \
-        | xargs -I{} cp -L {} /rootfs/usr/lib/archive-tools/ \
+    && loader="$(echo /lib/ld-musl-*.so.1)" \
+    && for bin in bsdtar bsdunzip; do "${loader}" --list "/usr/bin/${bin}"; done > libs.txt \
+    && awk '$2 == "=>" && $3 !~ /ld-musl/ { print $3 }' libs.txt | sort -u > libs-to-copy.txt \
+    && test -s libs-to-copy.txt \
+    && xargs -I{} cp -L {} /rootfs/usr/lib/archive-tools/ < libs-to-copy.txt \
     && patchelf --set-rpath /usr/lib/archive-tools \
         /rootfs/usr/local/bin/bsdtar /rootfs/usr/local/bin/bsdunzip /rootfs/usr/lib/archive-tools/*
 
