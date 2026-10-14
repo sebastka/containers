@@ -1,10 +1,66 @@
 # syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
 # Deluge on Docker Hardened Images: built in the -dev variant (shell, apk, compilers), run on the
-# runtime variant (no shell, no package manager, non-root). Python 3.13: libtorrent's musl wheels
-# stop there. See README.md.
+# runtime variant (no shell, no package manager, non-root). See README.md.
 
-FROM dhi.io/python:3.13.16-alpine3.24-dev@sha256:6496a70947b87a9ea1a9bf9b6a7f50e9df1872a8e16ee4fbecf6bb3722553dc2 AS build
+# libtorrent and its Python binding, from source: the 2.0 series Deluge 2.2 targets (PyPI only has
+# musl wheels of 2.1, up to Python 3.13). Boost.Python, libtorrent and the C++ runtime are linked
+# statically into the binding, which then only needs musl and the runtime image's OpenSSL.
+FROM dhi.io/python:3.14.8-alpine3.24-dev@sha256:df552b9c5634f917614a73c7687a6aebfff432f8ea7a6db754e953e618dc51c1 AS libtorrent
+
+# Updated with their sha256 by .github/workflows/deluge-downloads.yaml
+ARG BOOST_VERSION=1.92.0
+ARG BOOST_SHA256=ea7b982002cc9dfbe59b0b217b206f470dc75f3de0bb2973d844118934d82411
+ARG LIBTORRENT_VERSION=2.0.15
+ARG LIBTORRENT_SHA256=5e2e79129823b7ea48721164c32b5aaf83d3fd733b5502100f6705b29f27bb02
+
+# python-3.14-dev: the headers of the image's own Python, from DHI's apk repository (the -dev
+# image does not include them)
+RUN apk add --no-cache build-base cmake curl linux-headers openssl-dev python-3.14-dev xz
+
+WORKDIR /src
+RUN \
+    curl -fsSL -o boost.tar.xz \
+        "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-b2-nodocs.tar.xz" \
+    && echo "${BOOST_SHA256}  boost.tar.xz" | sha256sum -c - \
+    && tar -xJf boost.tar.xz
+
+WORKDIR /src/boost-${BOOST_VERSION}
+RUN \
+    ./bootstrap.sh --with-libraries=python --with-python=python3 \
+    && ./b2 -j"$(nproc)" -d0 --with-python variant=release link=static runtime-link=shared \
+        cxxflags=-fPIC cflags=-fPIC stage
+
+WORKDIR /src
+
+# The binding may only link musl and OpenSSL dynamically: checked on its dependency lines, since
+# listed alone it also reports Python's own symbols as missing (the interpreter provides them).
+RUN \
+    curl -fsSL -o libtorrent.tar.gz \
+        "https://github.com/arvidn/libtorrent/releases/download/v${LIBTORRENT_VERSION}/libtorrent-rasterbar-${LIBTORRENT_VERSION}.tar.gz" \
+    && echo "${LIBTORRENT_SHA256}  libtorrent.tar.gz" | sha256sum -c - \
+    && tar -xzf libtorrent.tar.gz \
+    && cmake -S "libtorrent-rasterbar-${LIBTORRENT_VERSION}" -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -Dpython-bindings=ON \
+        -Dpython-egg-info=OFF \
+        -DBoost_ROOT="/src/boost-${BOOST_VERSION}/stage" \
+        -DBoost_INCLUDE_DIR="/src/boost-${BOOST_VERSION}" \
+        -DBoost_USE_STATIC_LIBS=ON \
+        -DCMAKE_MODULE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
+    && cmake --build build -j"$(nproc)" \
+    && mkdir -p /out \
+    && find build -name 'libtorrent*.so' -path '*bindings/python*' -exec install -m 755 {} /out/ \; \
+    && loader="$(echo /lib/ld-musl-*.so.1)" \
+    && { "${loader}" --list /out/libtorrent*.so || true; } | grep '=>' > deps.txt \
+    && cat deps.txt \
+    && ! grep -v -E 'libc\.musl|libssl\.so|libcrypto\.so' deps.txt \
+    && PYTHONPATH=/out python3 -c 'import libtorrent; print("libtorrent", libtorrent.__version__)'
+
+
+FROM dhi.io/python:3.14.8-alpine3.24-dev@sha256:df552b9c5634f917614a73c7687a6aebfff432f8ea7a6db754e953e618dc51c1 AS build
 ARG VERSION
 ARG TARGETARCH
 
@@ -23,13 +79,16 @@ ARG UNRAR_SHA256=3995af0aa32b1505a566da053725551a1f0698dc42b2fdf7ba7d65db0d004e3
 ARG DBIP_MONTH=2026-10
 ARG DBIP_SHA256=4cd44536ddfd40fec7eca94a233f7d19f38d470e6522e653cb8d27001f5fe177
 
-RUN apk add --no-cache build-base curl libarchive-tools patch patchelf tzdata xz
+# python-3.14-dev: lets zope.interface build its C extension rather than fall back to pure Python
+RUN apk add --no-cache build-base curl libarchive-tools patch patchelf python-3.14-dev tzdata xz
 
 WORKDIR /build
 COPY . .
+COPY --from=libtorrent /out/ /libtorrent/
 
 # Deluge, in a virtualenv: every package pinned with its hash; zope.interface builds from source
-# (no musl wheel). Then Alpine's pyOpenSSL fix, and the GeoIP shim as a top-level module.
+# (no musl wheel). Then Alpine's pyOpenSSL fix, the GeoIP shim as a top-level module, and the
+# libtorrent binding built above.
 RUN \
     python3 -m venv /opt/deluge \
     && /opt/deluge/bin/pip install --no-cache-dir --require-hashes --requirement requirements.txt \
@@ -37,6 +96,7 @@ RUN \
     && site="$(/opt/deluge/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
     && patch -d "${site}" -p1 < patches/pyopenssl-26.patch \
     && install -m 644 assets/GeoIP.py "${site}/GeoIP.py" \
+    && install -m 755 /libtorrent/libtorrent*.so "${site}/" \
     && /opt/deluge/bin/pip uninstall --yes pip \
     && /opt/deluge/bin/python -m compileall -q "${site}"
 
@@ -89,7 +149,7 @@ RUN \
         /rootfs/usr/local/bin/bsdtar /rootfs/usr/local/bin/bsdunzip /rootfs/usr/lib/archive-tools/*
 
 
-FROM dhi.io/python:3.13.16-alpine3.24@sha256:de5a7323ef92a3a89981600520a9ad5494b43b21fd594b31aa3a0b3266ef88f1
+FROM dhi.io/python:3.14.8-alpine3.24@sha256:18f7bdb9b4b059d2eed0f48b730bdbe5c64089829f063e108e7ba13d78ef518c
 
 ENV DELUGE_BIN="deluged" \
     XDG_CONFIG_HOME="/config" \

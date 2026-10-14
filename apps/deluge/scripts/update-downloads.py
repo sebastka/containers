@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Updates the pinned downloads in apps/deluge/Dockerfile: 7-Zip, UnRAR and the DB-IP database.
+"""Updates the pinned downloads in apps/deluge/Dockerfile: libtorrent, Boost, 7-Zip, UnRAR and the
+DB-IP database.
 
 Run by .github/workflows/deluge-downloads.yaml, which turns the changes into a pull request; also
 runnable by hand from the repository root. Standard library only. Each source is checked on its
 own: one being unreachable leaves the others to update.
 
+- libtorrent: the latest 2.0.x release of arvidn/libtorrent (the series Deluge 2.2 targets; 2.1 is
+  released alongside), with the sha256 digest GitHub lists for its source tarball.
+- Boost: the latest release of boostorg/boost, likewise (the b2 source tarball without docs).
 - 7-Zip: the latest GitHub release of ip7z/7zip, with the sha256 digests GitHub lists for its
   linux-x64 and linux-arm64 assets.
 - UnRAR: the source of the newest stable release. Source file names do not tell betas apart
@@ -49,20 +53,57 @@ def set_arg(dockerfile, name, value):
     return re.sub(rf'^(ARG {name}=)\S+$', lambda m: m.group(1) + value, dockerfile, flags=re.M)
 
 
-def check_7zip(dockerfile):
-    current = get_arg(dockerfile, 'SEVENZIP_VERSION')
+def github(path):
     headers = {'Accept': 'application/vnd.github+json'}
     if os.environ.get('GH_TOKEN'):
         headers['Authorization'] = f'Bearer {os.environ["GH_TOKEN"]}'
-    release = json.loads(fetch('https://api.github.com/repos/ip7z/7zip/releases/latest', headers))
+    return json.loads(fetch(f'https://api.github.com/{path}', headers))
+
+
+def asset_digest(release, name):
+    asset = next((a for a in release['assets'] if a['name'] == name), None)
+    if not asset or not (asset.get('digest') or '').startswith('sha256:'):
+        raise RuntimeError(f'{name}: no such asset, or no sha256 digest, in {release["tag_name"]}')
+    return asset['digest'].removeprefix('sha256:')
+
+
+def check_libtorrent(dockerfile):
+    current = get_arg(dockerfile, 'LIBTORRENT_VERSION')
+    releases = [
+        r for r in github('repos/arvidn/libtorrent/releases?per_page=50')
+        if not r['prerelease'] and not r['draft'] and r['tag_name'].startswith('v2.0.')
+    ]
+    if not releases:
+        raise RuntimeError('no 2.0.x release of arvidn/libtorrent')
+    release = max(releases, key=lambda r: tuple(int(p) for p in r['tag_name'][1:].split('.')))
+    version = release['tag_name'][1:]
+    digest = asset_digest(release, f'libtorrent-rasterbar-{version}.tar.gz')
+    if version == current and digest == get_arg(dockerfile, 'LIBTORRENT_SHA256'):
+        return dockerfile, None
+    dockerfile = set_arg(dockerfile, 'LIBTORRENT_VERSION', version)
+    dockerfile = set_arg(dockerfile, 'LIBTORRENT_SHA256', digest)
+    return dockerfile, f'libtorrent {current} → {version} ({release["html_url"]})'
+
+
+def check_boost(dockerfile):
+    current = get_arg(dockerfile, 'BOOST_VERSION')
+    release = github('repos/boostorg/boost/releases/latest')
+    version = release['tag_name'].removeprefix('boost-')
+    digest = asset_digest(release, f'boost-{version}-b2-nodocs.tar.xz')
+    if version == current and digest == get_arg(dockerfile, 'BOOST_SHA256'):
+        return dockerfile, None
+    dockerfile = set_arg(dockerfile, 'BOOST_VERSION', version)
+    dockerfile = set_arg(dockerfile, 'BOOST_SHA256', digest)
+    return dockerfile, f'Boost {current} → {version} ({release["html_url"]})'
+
+
+def check_7zip(dockerfile):
+    current = get_arg(dockerfile, 'SEVENZIP_VERSION')
+    release = github('repos/ip7z/7zip/releases/latest')
     version = release['tag_name']
     digests = {}
     for arch, asset_arch in (('AMD64', 'x64'), ('ARM64', 'arm64')):
-        name = f'7z{version.replace(".", "")}-linux-{asset_arch}.tar.xz'
-        asset = next((a for a in release['assets'] if a['name'] == name), None)
-        if not asset or not (asset.get('digest') or '').startswith('sha256:'):
-            raise RuntimeError(f'{name}: no such asset, or no sha256 digest, in release {version}')
-        digests[arch] = asset['digest'].removeprefix('sha256:')
+        digests[arch] = asset_digest(release, f'7z{version.replace(".", "")}-linux-{asset_arch}.tar.xz')
 
     changed = version != current or any(
         get_arg(dockerfile, f'SEVENZIP_SHA256_{arch}') != digest for arch, digest in digests.items()
@@ -125,7 +166,7 @@ def main():
         original = dockerfile = f.read()
 
     changes, failures = [], []
-    for check in (check_7zip, check_unrar, check_dbip):
+    for check in (check_libtorrent, check_boost, check_7zip, check_unrar, check_dbip):
         try:
             dockerfile, change = check(dockerfile)
         except Exception as error:  # One source failing must not hold back the others
