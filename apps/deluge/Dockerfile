@@ -42,7 +42,7 @@ RUN \
 
 # Everything else the runtime image gets, staged under /rootfs
 RUN \
-    mkdir -p /rootfs/usr/local/bin /rootfs/usr/share/GeoIP /rootfs/usr/share/zoneinfo /rootfs/config \
+    mkdir -p /rootfs/usr/local/bin /rootfs/usr/share/GeoIP /rootfs/usr/share/zoneinfo /config-dir \
     && install -m 644 assets/entrypoint.py /rootfs/entrypoint.py \
     && cp -r defaults /rootfs/defaults \
     && cp -r /usr/share/zoneinfo/. /rootfs/usr/share/zoneinfo/ \
@@ -99,7 +99,8 @@ ENV DELUGE_BIN="deluged" \
 
 COPY --from=build /opt/deluge /opt/deluge
 COPY --from=build /rootfs/ /
-COPY --from=build --chown=65532:65532 /rootfs/config /config
+# Outside /rootfs: --chown only applies to a directory this COPY creates, not to one that exists
+COPY --from=build --chown=65532:65532 /config-dir /config
 
 # The runtime image's non-root user
 USER 65532:65532
