@@ -55,7 +55,7 @@ RUN \
     && curl -fsSL -o 7z.tar.xz \
         "https://github.com/ip7z/7zip/releases/download/${SEVENZIP_VERSION}/7z$(echo "${SEVENZIP_VERSION}" | tr -d .)-linux-${arch}.tar.xz" \
     && echo "${sha}  7z.tar.xz" | sha256sum -c - \
-    && tar -xJf 7z.tar.xz 7zzs \
+    && bsdtar -xf 7z.tar.xz 7zzs \
     && install -m 755 7zzs /rootfs/usr/local/bin/7zzs \
     && ln -s 7zzs /rootfs/usr/local/bin/7zr \
     \
