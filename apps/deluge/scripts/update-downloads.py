@@ -2,7 +2,7 @@
 """Updates the pinned downloads in apps/deluge/Dockerfile: libtorrent, Boost, 7-Zip, UnRAR and the
 DB-IP database.
 
-Run by .github/workflows/deluge-downloads.yaml, which turns the changes into a pull request; also
+Run by .github/workflows/app-downloads.yaml, which turns the changes into a pull request; also
 runnable by hand from the repository root. Standard library only. Each source is checked on its
 own: one being unreachable leaves the others to update.
 
@@ -29,7 +29,7 @@ import urllib.error
 import urllib.request
 
 DOCKERFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Dockerfile')
-USER_AGENT = 'sebastka/containers deluge-downloads'
+USER_AGENT = 'sebastka/containers app-downloads'
 
 
 def fetch(url, headers=None):

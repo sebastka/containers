@@ -1,0 +1,54 @@
+#!/opt/paperless/bin/python
+"""Prepares Tesseract's language data in $TESSDATA_PREFIX: the image's own (English and orientation
+detection), plus each language in $PAPERLESS_OCR_LANGUAGES ("nor deu+fra" style, as paperless takes
+it), downloaded from tesseract-ocr/tessdata at $TESSDATA_REF (default 4.1.0).
+
+Meant for an init container writing to a volume shared with paperless, which reads TESSDATA_PREFIX.
+Languages already there are kept, so a restart downloads nothing. Exits non-zero if any fails.
+"""
+
+import os
+import re
+import shutil
+import sys
+import tempfile
+import urllib.request
+
+BUNDLED = '/usr/share/tesseract-ocr/5/tessdata'
+REPOSITORY = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata'
+
+
+def main():
+    target = os.environ.get('TESSDATA_PREFIX') or sys.exit('TESSDATA_PREFIX is not set')
+    ref = os.environ.get('TESSDATA_REF', '4.1.0')
+    os.makedirs(target, exist_ok=True)
+
+    for entry in os.listdir(BUNDLED):
+        source, destination = os.path.join(BUNDLED, entry), os.path.join(target, entry)
+        if os.path.isdir(source):
+            shutil.copytree(source, destination, dirs_exist_ok=True)
+        else:
+            shutil.copy2(source, destination)
+
+    languages = sorted(set(re.split(r'[\s+]+', os.environ.get('PAPERLESS_OCR_LANGUAGES', '').strip())) - {''})
+    for language in languages:
+        path = os.path.join(target, f'{language}.traineddata')
+        if os.path.exists(path):
+            print(f'{language}: present')
+            continue
+        url = f'{REPOSITORY}/{ref}/{language}.traineddata'
+        # Downloaded next to its final name and renamed: never a partial file under that name
+        with tempfile.NamedTemporaryFile(dir=target, delete=False) as f:
+            try:
+                with urllib.request.urlopen(url, timeout=120) as response:
+                    shutil.copyfileobj(response, f)
+            except Exception as error:
+                os.unlink(f.name)
+                sys.exit(f'{language}: {url}: {error}')
+        os.chmod(f.name, 0o644)
+        os.replace(f.name, path)
+        print(f'{language}: downloaded ({os.path.getsize(path)} bytes)')
+
+
+if __name__ == '__main__':
+    main()
