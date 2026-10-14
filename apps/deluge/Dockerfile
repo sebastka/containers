@@ -3,9 +3,10 @@
 # Deluge on Docker Hardened Images: built in the -dev variant (shell, apk, compilers), run on the
 # runtime variant (no shell, no package manager, non-root). See README.md.
 
-# libtorrent and its Python binding, from source: the 2.0 series Deluge 2.2 targets (PyPI only has
-# musl wheels of 2.1, up to Python 3.13). Boost.Python, libtorrent and the C++ runtime are linked
-# statically into the binding, which then only needs musl and the runtime image's OpenSSL.
+# libtorrent and its Python binding, from source: the 2.0 series, the one Deluge 2.2 was mostly
+# developed against (it requires >= 1.2, and also runs on 2.1). PyPI only has musl wheels of 2.1, up
+# to Python 3.13. Boost.Python, libtorrent and the C++ runtime are linked statically into the
+# binding, which then only needs musl and the runtime image's OpenSSL.
 FROM dhi.io/python:3.14.8-alpine3.24-dev@sha256:df552b9c5634f917614a73c7687a6aebfff432f8ea7a6db754e953e618dc51c1 AS libtorrent
 
 # Updated with their sha256 by .github/workflows/deluge-downloads.yaml

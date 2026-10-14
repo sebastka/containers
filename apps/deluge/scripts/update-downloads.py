@@ -6,8 +6,8 @@ Run by .github/workflows/deluge-downloads.yaml, which turns the changes into a p
 runnable by hand from the repository root. Standard library only. Each source is checked on its
 own: one being unreachable leaves the others to update.
 
-- libtorrent: the latest 2.0.x release of arvidn/libtorrent (the series Deluge 2.2 targets; 2.1 is
-  released alongside), with the sha256 digest GitHub lists for its source tarball.
+- libtorrent: the latest 2.0.x release of arvidn/libtorrent (the series the Dockerfile builds;
+  2.1 is released alongside), with the sha256 digest GitHub lists for its source tarball.
 - Boost: the latest release of boostorg/boost, likewise (the b2 source tarball without docs).
 - 7-Zip: the latest GitHub release of ip7z/7zip, with the sha256 digests GitHub lists for its
   linux-x64 and linux-arm64 assets.

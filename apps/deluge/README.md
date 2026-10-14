@@ -11,11 +11,12 @@ never worked.
 - **Deluge**, from PyPI, in a virtualenv at `/opt/deluge` (on `PATH`): `deluged`, `deluge-web`,
   `deluge-console`. Every Python package is pinned with its hash in `requirements.txt`, generated
   from `requirements.in` (command in its header).
-  - **libtorrent 2.0**, the series Deluge 2.2 targets, built from source with its Python binding
-    (the `libtorrent` stage): PyPI only has musl wheels of 2.1, up to Python 3.13. Boost.Python,
-    libtorrent and the C++ runtime are linked statically into the binding, which only needs musl
-    and the runtime image's OpenSSL, so OpenSSL fixes come with DHI's updates. The stage only
-    rebuilds when libtorrent or Boost change (build cache).
+  - **libtorrent 2.0**, built from source with its Python binding (the `libtorrent` stage).
+    Deluge 2.2 requires libtorrent >= 1.2 and also runs on 2.1, but was mostly developed against
+    2.0, the more conservative choice; PyPI only has musl wheels of 2.1, up to Python 3.13.
+    Boost.Python, libtorrent and the C++ runtime are linked statically into the binding, which
+    only needs musl and the runtime image's OpenSSL, so OpenSSL fixes come with DHI's updates. The
+    stage only rebuilds when libtorrent or Boost change (build cache).
   - **setuptools < 81**: Deluge 2.2 finds its plugins through `pkg_resources`, which setuptools 81
     removed. With it, the bundled (zipped) plugin eggs load as they should.
   - **`patches/pyopenssl-26.patch`**, from Alpine: Deluge 2.2 does not start with pyOpenSSL 25+.
