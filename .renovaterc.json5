@@ -3,6 +3,11 @@
   extends: ["github>home-operations/renovate-config"],
   // No Helm charts in this repo, and Mend-hosted Renovate does not allow these commands
   ignorePresets: ["github>home-operations/renovate-config:helmPostUpgradeTasks.json5"],
+  // The upstream preset sets prHourlyLimit: 1, which together with its
+  // schedule ("* 0-3 * * *") caps this repo at four new PRs a day and parks
+  // the rest in the dashboard's "Awaiting Schedule" section. Every update here
+  // is its own PR, so let them all open in the nightly window.
+  prHourlyLimit: 0,
   timezone: "Europe/Oslo",
   reviewers: [],
   reviewersFromCodeOwners: false,

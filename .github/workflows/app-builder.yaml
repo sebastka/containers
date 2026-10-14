@@ -18,7 +18,11 @@ on:
         required: false
 
 concurrency:
-  group: app-builder-${{ inputs.app }}
+  # Releases for one app stay serialized so they push tags in order. Non-release
+  # runs get their own group, otherwise a pull request build queues behind an
+  # unrelated release of the same app (cancel-in-progress is false, so it waits
+  # rather than replacing it).
+  group: ${{ inputs.release && format('app-builder-{0}', inputs.app) || format('app-builder-{0}-{1}', inputs.app, github.run_id) }}
   cancel-in-progress: false
 
 jobs:
