@@ -101,8 +101,8 @@ RUN \
 # fontconfig cache, the helper commands, and upstream's ImageMagick policy (resource limits, PDF
 # allowed, SVG/MVG/PostScript and URL delegates refused). Trixie has ImageMagick 7, which reads
 # /etc/ImageMagick-7: upstream's image still writes the policy to ImageMagick-6, where it is unused.
-COPY --from=dhi.io/python:3.14.8-debian13@sha256:2af3a6573fdecaaeb5c5a8073ced2d511cafa38b4b1205ee8d4ab820b866bd20 /var/lib/dpkg /runtime-dpkg
-COPY --from=dhi.io/python:3.14.8-debian13@sha256:2af3a6573fdecaaeb5c5a8073ced2d511cafa38b4b1205ee8d4ab820b866bd20 /etc/passwd /etc/group /runtime-etc/
+COPY --from=dhi.io/python:3.14.8-debian13@sha256:b2dee88be07689a608f86c392dd863f20399f8ffcbe99eff6bdb4f04485d9298 /var/lib/dpkg /runtime-dpkg
+COPY --from=dhi.io/python:3.14.8-debian13@sha256:b2dee88be07689a608f86c392dd863f20399f8ffcbe99eff6bdb4f04485d9298 /etc/passwd /etc/group /runtime-etc/
 COPY --from=jbig2enc /out/jbig2 /rootfs/usr/local/bin/jbig2
 RUN \
     python3 scripts/stage-packages.py /runtime-dpkg /rootfs ${RUNTIME_PACKAGES} \
@@ -121,7 +121,7 @@ RUN \
     && echo 'paperless:x:1000:' >> /rootfs/etc/group
 
 
-FROM dhi.io/python:3.14.8-debian13@sha256:2af3a6573fdecaaeb5c5a8073ced2d511cafa38b4b1205ee8d4ab820b866bd20
+FROM dhi.io/python:3.14.8-debian13@sha256:b2dee88be07689a608f86c392dd863f20399f8ffcbe99eff6bdb4f04485d9298
 
 ENV PATH="/opt/paperless/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     PYTHONDONTWRITEBYTECODE=1 \
