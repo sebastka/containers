@@ -8,7 +8,7 @@ variable "VERSION" {
   // Tracks the Alpine packages ISC publishes to Cloudsmith, not the git tags:
   // tags run ahead of the packages, and a version with no package cannot build.
   // renovate: datasource=custom.stork depName=isc-stork-server
-  default = "2.4.2"
+  default = "2.6.0"
 }
 
 variable "SOURCE" {
