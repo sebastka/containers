@@ -7,7 +7,7 @@ variable "APP" {
 variable "VERSION" {
   // The paperless-ngx release. Updated with PAPERLESS_SHA256 in the Dockerfile by
   // .github/workflows/app-downloads.yaml: Renovate could not update the checksum
-  default = "3.3.1"
+  default = "3.3.2"
 }
 
 variable "SOURCE" {
