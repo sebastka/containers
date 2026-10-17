@@ -8,7 +8,12 @@ name: App Downloads
 # One pull request per app, so each builds, tests and releases on its own.
 on:
   schedule:
-    - cron: "0 4 * * 1" # Mondays: monthly and occasional releases
+    # Nightly, ahead of the chart. GitHub cron is UTC, so 01:00 is 03:00 in
+    # Europe/Oslo on summer time and 02:00 on winter time: inside 02:00-04:00
+    # either way, and before the 04:00-06:00 Oslo window sebastka/charts gives
+    # Renovate for ghcr.io/sebastka/** images. A run with nothing to update
+    # writes no files and opens no pull request.
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 permissions:
@@ -66,6 +71,7 @@ jobs:
       # A pull request from the app token, unlike one from GITHUB_TOKEN, runs the build and tests
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        id: pr
         with:
           add-paths: apps/${{ matrix.app }}
           body-path: ${{ runner.temp }}/pr-body.md
@@ -76,3 +82,20 @@ jobs:
           signoff: true
           title: "release(${{ matrix.app }}): update pinned downloads"
           token: ${{ steps.app-token.outputs.token }}
+
+      # These changes are a version and its checksum in docker-bake.hcl and the Dockerfile, which
+      # .renovaterc.json5 already auto-merges when Renovate is the one proposing them. The build and
+      # test matrix runs on this pull request and Build Success gates the merge, so wait for that
+      # rather than for a human. Skipped when nothing changed (no operation) or when the update
+      # reverted and the action closed the pull request.
+      - name: Enable Auto-merge
+        if: ${{ steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ steps.pr.outputs.pull-request-number }}
+          REPO: ${{ github.repository }}
+        run: |-
+          # An updated pull request keeps the setting, so only turn it on when it is off
+          if [[ "$(gh pr view "${PR}" --repo "${REPO}" --json autoMergeRequest --jq '.autoMergeRequest')" == "null" ]]; then
+              gh pr merge "${PR}" --repo "${REPO}" --auto --squash
+          fi
