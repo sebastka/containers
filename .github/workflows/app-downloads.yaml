@@ -95,7 +95,12 @@ jobs:
           PR: ${{ steps.pr.outputs.pull-request-number }}
           REPO: ${{ github.repository }}
         run: |-
-          # An updated pull request keeps the setting, so only turn it on when it is off
-          if [[ "$(gh pr view "${PR}" --repo "${REPO}" --json autoMergeRequest --jq '.autoMergeRequest')" == "null" ]]; then
-              gh pr merge "${PR}" --repo "${REPO}" --auto --squash
-          fi
+          # An updated pull request keeps the setting, so only turn it on when it is off. Ask for the
+          # comparison rather than the field: --jq prints an empty line for a JSON null, never "null",
+          # and an unreadable state has to fail here instead of quietly skipping the merge.
+          enabled="$(gh pr view "${PR}" --repo "${REPO}" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+          case "${enabled}" in
+              true) echo "Auto-merge already enabled on #${PR}" ;;
+              false) gh pr merge "${PR}" --repo "${REPO}" --auto --squash ;;
+              *) echo "::error::Could not read the auto-merge state of #${PR}: '${enabled}'" && exit 1 ;;
+          esac
