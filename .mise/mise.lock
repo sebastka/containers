@@ -118,6 +118,22 @@ checksum = "sha256:8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056942"
 
+[[tools.uv]]
+version = "0.13.1"
+backend = "aqua:astral-sh/uv"
+
+[tools.uv."platforms.linux-arm64"]
+checksum = "sha256:9041c73c99fdc5892cf128140beb354eca9231d502068cc36e6cb53a8e59ad14"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639312990"
+provenance = "github-attestations"
+
+[tools.uv."platforms.linux-x64"]
+checksum = "sha256:eadd9d27c134ab5ac1ffd4473b97a741407f3ea238288f03121fc4deddf90220"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639313223"
+provenance = "github-attestations"
+
 [[tools.yamlfmt]]
 version = "0.21.0"
 backend = "aqua:google/yamlfmt"

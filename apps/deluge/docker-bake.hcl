@@ -5,8 +5,9 @@ variable "APP" {
 }
 
 variable "VERSION" {
-  // Deluge from PyPI; requirements.txt pins the same version (the build checks they agree)
-  // renovate: datasource=pypi depName=deluge versioning=pep440
+  // Deluge from PyPI; requirements.in pins the same version and requirements.txt is compiled from
+  // it (the build checks they agree). Updated in all three by .github/workflows/app-downloads.yaml:
+  // Renovate cannot be trusted with the hashes in requirements.txt, see .renovaterc.json5
   default = "2.2.0"
 }
 
