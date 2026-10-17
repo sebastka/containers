@@ -1,4 +1,16 @@
-.cache
-.claude
-.private
+.*
+!.dockerignore
+!.editorconfig
+!.gitattributes
+!.github
+!.gitignore
+!.hadolint.yaml
+!.lefthook.toml
+!.mise
+!.renovaterc.json5
+!.shellcheckrc
+!.vscode
+!.yamlfmt.yaml
+
+# docker buildx bake metadata (mise run local-build)
 docker-bake.json
