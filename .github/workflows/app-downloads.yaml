@@ -61,6 +61,13 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
+      # deluge's script recompiles requirements.txt with uv. Only uv: the scripts are standard
+      # library otherwise, and installing go and node here would cost more than the job
+      - name: Setup Mise
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: --locked uv
+
       - name: Update Downloads
         env:
           APP: ${{ matrix.app }}

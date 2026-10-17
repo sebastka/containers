@@ -138,17 +138,14 @@
       automerge: true,
       automergeType: "pr",
     },
-    {
-      description: ["Deluge 2.2 finds its plugins through pkg_resources, removed in setuptools 81 (apps/deluge)"],
-      matchFileNames: ["apps/deluge/requirements.txt"],
-      matchPackageNames: ["setuptools"],
-      allowedVersions: "<81",
-    },
-    {
-      description: ["Deluge's version lives in docker-bake.hcl and requirements.txt: one PR for both (the build checks they agree)"],
-      matchFileNames: ["apps/deluge/docker-bake.hcl", "apps/deluge/requirements.txt"],
-      matchPackageNames: ["deluge"],
-      groupName: "deluge",
-    },
   ],
+  // apps/deluge/requirements.txt is compiled by uv and pinned with hashes. The pip_requirements
+  // manager rewrites a version in place but writes the new hashes out as a second entry, under the
+  // name PyPI registers rather than the normalised one uv writes, leaving the first entry on the
+  // old hashes; pip then fails --require-hashes (#144). apps/deluge/scripts/update-downloads.py
+  // recompiles the file nightly instead, which is also how its transitive dependencies move, and
+  // it keeps the Deluge pin in step with docker-bake.hcl. setuptools<81 lives in requirements.in.
+  pip_requirements: {
+    enabled: false,
+  },
 }
