@@ -1,0 +1,156 @@
+#!/bin/sh
+# Dump every database listed in databases.csv, encrypt each dump, and upload it. ENCRYPTION picks
+# age or PGP; both encrypt to a public key whose private half stays out of the cluster.
+#
+# The database and user lists are the same CSVs that provision the servers, and the passwords are
+# the same mounted volume. That is deliberate: a database added there is backed up without anyone
+# remembering to add it here, which is the failure this job exists to prevent.
+#
+# Logging in as each database's OWNER, never as the superuser: owner passwords are re-applied on
+# every provisioning run, so they survive a regenerated Secret, while the superuser password is
+# only read at initdb and drifts silently once its Secret is recreated.
+set -eu
+
+fail() { echo "dbdump2s3: $*" >&2; exit 1; }
+log()  { echo "dbdump2s3: $*"; }
+
+: "${DUMP_KIND:?set to postgres or mariadb}"
+: "${DB_HOST:?}"
+: "${DATABASES_CSV:?path to databases.csv}"
+: "${USERS_CSV:?path to users.csv}"
+: "${PASSWORD_DIR:?directory holding one file per role}"
+: "${S3_BUCKET:?}"
+: "${S3_ENDPOINT:?}"
+: "${CLUSTER:?the cluster name, used in the object key}"
+ENCRYPTION="${ENCRYPTION:-age}"
+HEARTBEAT_URL="${HEARTBEAT_URL:-}"
+WORKDIR="${WORKDIR:-/tmp}"
+
+case "$DUMP_KIND" in
+    postgres) DB_PORT="${DB_PORT:-5432}"; EXT="dump" ;;
+    mariadb)  DB_PORT="${DB_PORT:-3306}"; EXT="sql.xz" ;;
+    *) fail "DUMP_KIND must be postgres or mariadb, got '$DUMP_KIND'" ;;
+esac
+
+# Only the chosen one is required, so neither consumer has to set the other's variables. age is the
+# default, which is what this image did before it could do PGP.
+case "$ENCRYPTION" in
+    age) : "${AGE_RECIPIENT:?the age public key; the identity must NOT be in this pod}"
+         CRYPT_EXT="age" ;;
+    pgp) : "${PGP_RECIPIENT:?the armored PGP public key, base64; the private key must NOT be in this pod}"
+         CRYPT_EXT="gpg" ;;
+    *) fail "ENCRYPTION must be age or pgp, got '$ENCRYPTION'" ;;
+esac
+
+# An empty list is always a mistake, and silently uploading nothing would look like success until
+# the day it matters.
+databases=$(grep -v '^#' "$DATABASES_CSV" | grep -v '^[[:space:]]*$' | tail -n +2 | cut -d, -f1)
+users=$(grep -v '^#' "$USERS_CSV" | grep -v '^[[:space:]]*$' | tail -n +2)
+if [ -z "$databases" ] || [ -z "$users" ]; then
+    fail "no databases or no users parsed; refusing to report a successful backup"
+fi
+
+# A keyring of our own under WORKDIR: there is no home directory to put one in, and importing the
+# recipient up front means a bad key fails the run instead of every database in turn.
+if [ "$ENCRYPTION" = pgp ]; then
+    GNUPGHOME="${WORKDIR}/gnupg"
+    export GNUPGHOME
+    rm -rf "$GNUPGHOME"
+    mkdir -p "$GNUPGHOME"
+    chmod 700 "$GNUPGHOME"
+
+    # PGP_RECIPIENT is base64 so that an armored key, which is many lines, survives as one
+    # environment variable. Decoded to a file rather than piped into gpg: this shell has no
+    # reliable pipefail, so a corrupt value would reach gpg as an empty import that still exits 0.
+    key_file="${GNUPGHOME}/recipient.asc"
+    printf '%s' "$PGP_RECIPIENT" | base64 -d > "$key_file" \
+        || fail "PGP_RECIPIENT is not valid base64"
+    [ -s "$key_file" ] || fail "PGP_RECIPIENT decoded to nothing"
+    gpg --batch --quiet --import "$key_file" || fail "PGP_RECIPIENT is not an importable public key"
+    rm -f "$key_file"
+
+    # Encrypt to the fingerprint, so --recipient cannot resolve to some other key in the keyring
+    pgp_recipient=$(gpg --batch --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }')
+    [ -n "$pgp_recipient" ] || fail "no key fingerprint after importing PGP_RECIPIENT"
+    log "encrypting to PGP key ${pgp_recipient}"
+fi
+
+today=$(date -u +%Y-%m-%d)
+month=$(date -u +%Y-%m)
+day_of_month=$(date -u +%d)
+failed=0
+
+for db in $databases; do
+    # The owner is the first user granted ALL on it. Anything less cannot dump every table.
+    owner=$(grep -v '^#' "$USERS_CSV" | awk -F, -v d="$db" '$2 == d && $3 ~ /ALL/ {print $1; exit}')
+    [ -n "$owner" ] || { log "no ALL-privileged owner for '$db' in users.csv -- skipping"; failed=1; continue; }
+    [ -r "${PASSWORD_DIR}/${owner}" ] || { log "no password for '$owner' at ${PASSWORD_DIR}/${owner} -- skipping '$db'"; failed=1; continue; }
+
+    out="${WORKDIR}/${db}.${EXT}"
+    log "dumping ${db} as ${owner}"
+
+    if [ "$DUMP_KIND" = postgres ]; then
+        # --format=custom is compressed and restores selectively; roles and grants are NOT in here,
+        # they are recreated by the provisioning step before a restore.
+        PGPASSWORD=$(cat "${PASSWORD_DIR}/${owner}") \
+            pg_dump --host="$DB_HOST" --port="$DB_PORT" --username="$owner" --dbname="$db" \
+                    --format=custom --no-owner --no-privileges --file="$out" \
+            || { log "pg_dump failed for '$db'"; failed=1; rm -f "$out"; continue; }
+        pg_restore --list "$out" >/dev/null 2>&1 \
+            || { log "dump of '$db' is unreadable -- not uploading"; failed=1; rm -f "$out"; continue; }
+    else
+        # --single-transaction gives a consistent snapshot without locking writers; every table is
+        # InnoDB, so it covers all of them. Routines and triggers are not included by default.
+        raw="${WORKDIR}/${db}.sql"
+        MYSQL_PWD=$(cat "${PASSWORD_DIR}/${owner}") \
+            mariadb-dump --host="$DB_HOST" --port="$DB_PORT" --user="$owner" \
+                         --single-transaction --routines --triggers --no-tablespaces \
+                         --databases "$db" > "$raw" \
+            || { log "mariadb-dump failed for '$db'"; failed=1; rm -f "$raw"; continue; }
+        # Dumped to a file and compressed separately rather than piped: this shell has no reliable
+        # pipefail, so `dump | xz` would report xz's exit status and happily archive an error.
+        xz -T0 -6 -c "$raw" > "$out" || { log "xz failed for '$db'"; failed=1; rm -f "$raw" "$out"; continue; }
+        rm -f "$raw"
+        xz -t "$out" 2>/dev/null \
+            || { log "dump of '$db' is unreadable -- not uploading"; failed=1; rm -f "$out"; continue; }
+    fi
+
+    # Encrypt to the recipient's PUBLIC key. The half that can read this lives outside the
+    # cluster, so a compromised pod can write backups but cannot read them back.
+    enc="${out}.${CRYPT_EXT}"
+    if [ "$ENCRYPTION" = age ]; then
+        age --encrypt --recipient "$AGE_RECIPIENT" --output "$enc" "$out" \
+            || { log "age failed for '$db'"; failed=1; rm -f "$out" "$enc"; continue; }
+    else
+        # -z 0: the dump is already compressed, so gpg would spend the CPU for nothing.
+        # --trust-model always: an imported public key carries no signatures, and there is no
+        # interactive shell here to confirm it; the fingerprint above is what says it is the right key.
+        gpg --batch --yes --no-tty --quiet -z 0 --trust-model always \
+            --recipient "$pgp_recipient" --encrypt --output "$enc" "$out" \
+            || { log "gpg failed for '$db'"; failed=1; rm -f "$out" "$enc"; continue; }
+    fi
+    rm -f "$out"
+
+    key="daily/${CLUSTER}/${DUMP_KIND}/${db}/${today}.${EXT}.${CRYPT_EXT}"
+    aws --endpoint-url "$S3_ENDPOINT" s3 cp "$enc" "s3://${S3_BUCKET}/${key}" --only-show-errors \
+        || { log "upload failed for '$db'"; failed=1; rm -f "$enc"; continue; }
+    log "uploaded ${key} ($(wc -c < "$enc") bytes)"
+
+    # A monthly copy on the 1st, kept far longer by the bucket's lifecycle rules.
+    if [ "$day_of_month" = "01" ]; then
+        aws --endpoint-url "$S3_ENDPOINT" s3 cp "$enc" \
+            "s3://${S3_BUCKET}/monthly/${CLUSTER}/${DUMP_KIND}/${db}/${month}.${EXT}.${CRYPT_EXT}" --only-show-errors \
+            || { log "monthly copy failed for '$db'"; failed=1; }
+    fi
+    rm -f "$enc"
+done
+
+[ "$failed" -eq 0 ] || fail "one or more databases failed; not sending the heartbeat"
+
+# Only now. The heartbeat is what a push monitor watches, so it has to mean "every database in the
+# list is in the bucket", not "the job ran".
+if [ -n "$HEARTBEAT_URL" ]; then
+    curl --fail --silent --show-error --max-time 20 --retry 3 "$HEARTBEAT_URL" >/dev/null \
+        || log "backup succeeded but the heartbeat failed"
+fi
+log "done"
