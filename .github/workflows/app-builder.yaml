@@ -276,11 +276,46 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Get App Options
+        uses: $/.github/actions/app-options
+        id: app-options
+        with:
+          app: ${{ inputs.app }}
+
       - name: Create Manifest List and Push
         working-directory: ${{ runner.temp }}/digests
+        env:
+          DESCRIPTION: ${{ steps.app-options.outputs.description }}
+          LICENSES: ${{ steps.app-options.outputs.licenses }}
+          SOURCE: ${{ steps.app-options.outputs.source }}
+          VERSION: ${{ steps.app-options.outputs.version }}
+          REVISION: ${{ github.sha }}
+          REPO: ${{ github.repository }}
         run: |-
           IMAGE="ghcr.io/${REPO_OWNER}/${APP}"
+
+          # The labels the build set live in each platform's image config, which ghcr.io does not
+          # read: its package page takes org.opencontainers.image.description and the rest from
+          # annotations on the index. imagetools create writes a bare index unless they are passed
+          # here, which is why the page said no description had been provided.
+          annotations=()
+          for annotation in \
+              "org.opencontainers.image.title=${APP}" \
+              "org.opencontainers.image.description=${DESCRIPTION}" \
+              "org.opencontainers.image.licenses=${LICENSES}" \
+              "org.opencontainers.image.source=${SOURCE}" \
+              "org.opencontainers.image.url=${IMAGE}" \
+              "org.opencontainers.image.documentation=https://github.com/${REPO}/blob/main/apps/${APP}/README.md" \
+              "org.opencontainers.image.version=${VERSION}" \
+              "org.opencontainers.image.revision=${REVISION}" \
+              "org.opencontainers.image.vendor=${REPO_OWNER}" \
+              "org.opencontainers.image.authors=${REPO_OWNER}" \
+          ; do
+              annotations+=(--annotation "index:${annotation}")
+          done
+
           docker buildx imagetools create \
+              "${annotations[@]}" \
               $(jq --raw-output --compact-output --arg image "$IMAGE" '.target."docker-metadata-action".tags | map(select(startswith($image)) | "-t " + .) | join(" ")' "${RUNNER_TEMP}/docker-metadata-action-bake.json") \
               $(printf "${IMAGE}@sha256:%s " *)
 

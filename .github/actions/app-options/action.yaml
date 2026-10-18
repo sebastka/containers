@@ -9,6 +9,12 @@ inputs:
     required: true
 
 outputs:
+  description:
+    description: Description
+    value: ${{ steps.options.outputs.description }}
+  licenses:
+    description: Licenses
+    value: ${{ steps.options.outputs.licenses }}
   platforms:
     description: Platforms
     value: ${{ steps.options.outputs.platforms }}
@@ -39,7 +45,17 @@ runs:
             docker buildx bake --list type=variables,format=json --progress=quiet \
                 | jq --raw-output '.[] | select(.name == "VERSION") | .value' \
         )
+        DESCRIPTION=$(\
+            docker buildx bake --list type=variables,format=json --progress=quiet \
+                | jq --raw-output '.[] | select(.name == "DESCRIPTION") | .value' \
+        )
+        LICENSES=$(\
+            docker buildx bake --list type=variables,format=json --progress=quiet \
+                | jq --raw-output '.[] | select(.name == "LICENSES") | .value' \
+        )
 
         echo "platforms=${PLATFORMS}" >> $GITHUB_OUTPUT
         echo "source=${SOURCE}" >> $GITHUB_OUTPUT
         echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "description=${DESCRIPTION}" >> $GITHUB_OUTPUT
+        echo "licenses=${LICENSES}" >> $GITHUB_OUTPUT
