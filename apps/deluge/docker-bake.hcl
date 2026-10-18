@@ -15,6 +15,16 @@ variable "SOURCE" {
   default = "https://github.com/deluge-torrent/deluge"
 }
 
+variable "DESCRIPTION" {
+  default = "Deluge on Docker Hardened Images, with libtorrent and its Python binding built from source"
+}
+
+variable "LICENSES" {
+  // Deluge's LICENSE says "version 3"; its source headers say "3.0, or later". It adds a
+  // special exception for linking against OpenSSL, which SPDX has no identifier for.
+  default = "GPL-3.0-or-later"
+}
+
 group "default" {
   targets = ["image-local"]
 }
@@ -25,6 +35,8 @@ target "image" {
     VERSION = "${VERSION}"
   }
   labels = {
+    "org.opencontainers.image.description" = "${DESCRIPTION}"
+    "org.opencontainers.image.licenses" = "${LICENSES}"
     "org.opencontainers.image.source" = "${SOURCE}"
   }
 }

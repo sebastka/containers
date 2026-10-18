@@ -165,6 +165,9 @@ jobs:
             *.labels.org.opencontainers.image.version=${{ steps.app-options.outputs.version }}
             *.labels.org.opencontainers.image.revision=${{ github.sha }}
             *.labels.org.opencontainers.image.vendor=${{ github.repository_owner }}
+            *.labels.org.opencontainers.image.authors=${{ github.repository_owner }}
+            *.labels.org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/apps/${{ inputs.app }}/README.md
+            *.labels.org.opencontainers.image.ref.name=${{ inputs.app }}:${{ steps.app-options.outputs.version }}
             *.output=${{ inputs.release && format('type=image,name=ghcr.io/{0}/{1},push-by-digest=true,name-canonical=true,push=true,compression=zstd,force-compression=true', github.repository_owner, inputs.app) || 'type=docker' }}
             *.platform=${{ matrix.platform }}
             *.tags=${{ ! inputs.release && format('ghcr.io/{0}/{1}:sandbox', github.repository_owner, inputs.app) || '' }}

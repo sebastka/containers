@@ -14,6 +14,16 @@ variable "SOURCE" {
   default = "https://github.com/paperless-ngx/paperless-ngx"
 }
 
+variable "DESCRIPTION" {
+  default = "paperless-ngx on Docker Hardened Images, without s6: one process per container"
+}
+
+variable "LICENSES" {
+  // Upstream ships the plain GPLv3 text with no "or any later version" statement of its
+  // own, so the narrower identifier is the accurate one.
+  default = "GPL-3.0-only"
+}
+
 group "default" {
   targets = ["image-local"]
 }
@@ -24,6 +34,8 @@ target "image" {
     VERSION = "${VERSION}"
   }
   labels = {
+    "org.opencontainers.image.description" = "${DESCRIPTION}"
+    "org.opencontainers.image.licenses" = "${LICENSES}"
     "org.opencontainers.image.source" = "${SOURCE}"
   }
 }
