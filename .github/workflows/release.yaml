@@ -8,6 +8,10 @@ on:
       - main
     paths:
       - apps/**
+  schedule:
+    # Rebuild every app weekly. Apt packages are resolved when an image is built, so without this
+    # a Debian security update only reaches an image when something unrelated changes that app
+    - cron: "0 3 * * 0"
   workflow_dispatch:
     inputs:
       app:
@@ -51,7 +55,7 @@ jobs:
           path: apps
 
   changed:
-    if: ${{ needs.prepare.outputs.changed-files != '[]' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.prepare.outputs.changed-files != '[]' || github.event_name != 'push' }}
     name: Get Changed Apps
     needs:
       - prepare
@@ -61,15 +65,35 @@ jobs:
     outputs:
       apps: ${{ steps.apps.outputs.apps }}
     steps:
+      # The weekly rebuild has no diff to work from: it takes every app instead
+      - name: Checkout
+        if: ${{ github.event_name == 'schedule' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Get App Inventory
+        if: ${{ github.event_name == 'schedule' }}
+        uses: $/.github/actions/app-inventory
+        id: inventory
+
       - name: Get Apps
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: apps
         env:
-          APPS: ${{ github.event_name == 'workflow_dispatch' && inputs.app || join(fromJSON(needs.prepare.outputs.changed-files), ' ') }}
+          EVENT: ${{ github.event_name }}
+          INPUT_APP: ${{ inputs.app }}
+          CHANGED: ${{ needs.prepare.outputs.changed-files }}
+          INVENTORY: ${{ steps.inventory.outputs.apps }}
         with:
+          # Branching here rather than in an expression: GitHub evaluates every operand of || even
+          # when an earlier one is already true, so fromJSON would run on CHANGED when it is empty
           script: |-
-            const { APPS } = process.env;
-            const appsToBuild = APPS.split(' ').filter(Boolean);
+            const { EVENT, INPUT_APP, CHANGED, INVENTORY } = process.env;
+            const appsToBuild =
+                EVENT === 'schedule' ? JSON.parse(INVENTORY)
+              : EVENT === 'workflow_dispatch' ? INPUT_APP.split(' ').filter(Boolean)
+              : JSON.parse(CHANGED || '[]');
             core.setOutput('apps', JSON.stringify(appsToBuild));
             console.log('apps:', JSON.stringify(appsToBuild, null, 2));
             core.summary.addHeading('Apps to build:').addList(appsToBuild).write();
@@ -97,7 +121,7 @@ jobs:
       max-parallel: 4
     with:
       app: ${{ matrix.app }}
-      release: ${{ github.event_name == 'workflow_dispatch' && inputs.release || github.event_name == 'push' }}
+      release: ${{ github.event_name == 'workflow_dispatch' && inputs.release || github.event_name == 'push' || github.event_name == 'schedule' }}
 
   status:
     if: ${{ !cancelled() }}
