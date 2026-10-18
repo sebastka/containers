@@ -15,6 +15,14 @@ variable "SOURCE" {
   default = "https://github.com/isc-projects/stork"
 }
 
+variable "DESCRIPTION" {
+  default = "ISC Stork server, the monitoring dashboard for Kea DHCP and BIND 9"
+}
+
+variable "LICENSES" {
+  default = "MPL-2.0"
+}
+
 group "default" {
   targets = ["image-local"]
 }
@@ -25,6 +33,8 @@ target "image" {
     VERSION = "${VERSION}"
   }
   labels = {
+    "org.opencontainers.image.description" = "${DESCRIPTION}"
+    "org.opencontainers.image.licenses" = "${LICENSES}"
     "org.opencontainers.image.source" = "${SOURCE}"
   }
 }

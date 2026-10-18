@@ -15,6 +15,16 @@ variable "SOURCE" {
   default = "https://github.com/sebastka/containers"
 }
 
+variable "DESCRIPTION" {
+  default = "Logical backups of PostgreSQL and MariaDB, encrypted to an age or PGP recipient and uploaded to S3"
+}
+
+variable "LICENSES" {
+  // The script in this repository. The Alpine packages it ships -- gnupg, the database
+  // clients, aws-cli -- keep their own licences, as any base image's contents do.
+  default = "MIT"
+}
+
 group "default" {
   targets = ["image-local"]
 }
@@ -25,6 +35,8 @@ target "image" {
     VERSION = "${VERSION}"
   }
   labels = {
+    "org.opencontainers.image.description" = "${DESCRIPTION}"
+    "org.opencontainers.image.licenses" = "${LICENSES}"
     "org.opencontainers.image.source" = "${SOURCE}"
   }
 }
