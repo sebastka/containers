@@ -45,6 +45,36 @@ func Test(t *testing.T) {
 		"sh", "-c",
 		`out=$(/usr/local/bin/dbdump2s3 2>&1) && exit 1; echo "$out" | grep -q "ENCRYPTION must be age or pgp"`)
 
+	// A malformed lock setting is refused up front, not discovered after the first upload
+	for _, tc := range []struct{ days, mode, want string }{
+		{"thirty", "COMPLIANCE", "OBJECT_LOCK_DAYS must be a positive number"},
+		{"0", "COMPLIANCE", "OBJECT_LOCK_DAYS must be a positive number"},
+		{"30", "compliance", "OBJECT_LOCK_MODE must be COMPLIANCE or GOVERNANCE"},
+	} {
+		helpers.RequireCommandSucceeds(t, image,
+			&helpers.ContainerConfig{Env: map[string]string{
+				"DUMP_KIND":        "postgres",
+				"DB_HOST":          "db",
+				"DATABASES_CSV":    "/dev/null",
+				"USERS_CSV":        "/dev/null",
+				"PASSWORD_DIR":     "/dev/null",
+				"S3_BUCKET":        "b",
+				"S3_ENDPOINT":      "https://example.invalid",
+				"CLUSTER":          "c",
+				"AGE_RECIPIENT":    "age1example",
+				"OBJECT_LOCK_DAYS": tc.days,
+				"OBJECT_LOCK_MODE": tc.mode,
+			}},
+			"sh", "-c",
+			`out=$(/usr/local/bin/dbdump2s3 2>&1) && exit 1; echo "$out" | grep -q "`+tc.want+`"`)
+	}
+
+	// The lock check reads S3 timestamps with busybox date, UTC only
+	helpers.RequireCommandSucceeds(t, image, nil, "sh", "-c",
+		`set -e
+		test "$(date -u -d "$(printf '%s' 2026-11-17T16:50:48.255525+00:00 | cut -c1-19 | tr T ' ')" +%s)" = 1794934248
+		test "$(date -u -d @1794934248 +%Y-%m-%dT%H:%M:%SZ)" = 2026-11-17T16:50:48Z`)
+
 	// The gpg flags the script encrypts with, round-tripped
 	helpers.RequireCommandSucceeds(t, image, nil, "sh", "-c",
 		`set -e

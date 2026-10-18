@@ -25,6 +25,8 @@ log()  { echo "dbdump2s3: $*"; }
 ENCRYPTION="${ENCRYPTION:-age}"
 HEARTBEAT_URL="${HEARTBEAT_URL:-}"
 WORKDIR="${WORKDIR:-/tmp}"
+OBJECT_LOCK_DAYS="${OBJECT_LOCK_DAYS:-}"
+OBJECT_LOCK_MODE="${OBJECT_LOCK_MODE:-COMPLIANCE}"
 
 case "$DUMP_KIND" in
     postgres) DB_PORT="${DB_PORT:-5432}"; EXT="dump" ;;
@@ -41,6 +43,54 @@ case "$ENCRYPTION" in
          CRYPT_EXT="gpg" ;;
     *) fail "ENCRYPTION must be age or pgp, got '$ENCRYPTION'" ;;
 esac
+
+# Object lock is opt-in: the bucket must have been created with it (and so with versioning). When
+# set, every uploaded version is locked explicitly and the lock read back, rather than trusting the
+# bucket's default retention: Hetzner was seen applying that default to only some uploads.
+if [ -n "$OBJECT_LOCK_DAYS" ]; then
+    case "$OBJECT_LOCK_DAYS" in
+        *[!0-9]* | 0*) fail "OBJECT_LOCK_DAYS must be a positive number of days, got '$OBJECT_LOCK_DAYS'" ;;
+    esac
+    case "$OBJECT_LOCK_MODE" in
+        COMPLIANCE | GOVERNANCE) ;;
+        *) fail "OBJECT_LOCK_MODE must be COMPLIANCE or GOVERNANCE, got '$OBJECT_LOCK_MODE'" ;;
+    esac
+fi
+
+# Seconds since the epoch for an S3 timestamp (2026-11-17T16:50:48.255525+00:00, or ...Z). Only UTC
+# is accepted: busybox date cannot apply an offset, and S3 answers in UTC anyway.
+s3_epoch() {
+    case "$1" in
+        ????-??-??T??:??:??*Z | ????-??-??T??:??:??*+00:00) ;;
+        *) return 1 ;;
+    esac
+    date -u -d "$(printf '%s' "$1" | cut -c1-19 | tr T ' ')" +%s
+}
+
+# lock <key>: lock the current version of <key> until OBJECT_LOCK_DAYS from now, then check that
+# it is. Locking the exact version just written, by its ID, so a concurrent upload of the same key
+# cannot take its place. A lock already longer than ours is kept: a COMPLIANCE lock cannot be
+# shortened, so the call fails, and the check below accepts the longer one.
+lock() {
+    _version=$(aws --endpoint-url "$S3_ENDPOINT" s3api head-object --bucket "$S3_BUCKET" --key "$1" --query VersionId --output text) || { log "cannot read the version of ${1}"; return 1; }
+    case "$_version" in
+        '' | None | null) log "${1} has no version ID: is the bucket versioned, with object lock?"; return 1 ;;
+    esac
+
+    _now=$(date -u +%s)
+    _until=$(( _now + OBJECT_LOCK_DAYS * 86400 ))
+    aws --endpoint-url "$S3_ENDPOINT" s3api put-object-retention --bucket "$S3_BUCKET" --key "$1" --version-id "$_version" --retention "Mode=${OBJECT_LOCK_MODE},RetainUntilDate=$(date -u -d "@${_until}" +%Y-%m-%dT%H:%M:%SZ)" || log "setting the lock on ${1} failed; checking for an existing one"
+
+    _lock=$(aws --endpoint-url "$S3_ENDPOINT" s3api head-object --bucket "$S3_BUCKET" --key "$1" --version-id "$_version" --query '[ObjectLockMode,ObjectLockRetainUntilDate]' --output text) || { log "cannot read the lock of ${1}"; return 1; }
+    _mode=$(printf '%s' "$_lock" | cut -f1)
+    _date=$(printf '%s' "$_lock" | cut -f2)
+    [ "$_mode" = "$OBJECT_LOCK_MODE" ] || { log "${1} is not locked in ${OBJECT_LOCK_MODE} mode (got '${_mode}')"; return 1; }
+    _retained=$(s3_epoch "$_date") || { log "unreadable lock date '${_date}' on ${1}"; return 1; }
+    # An hour of slack: ours, set seconds after the upload, may only have lengthened the bucket's
+    # default lock, which counts from the upload itself.
+    [ "$_retained" -ge $(( _until - 3600 )) ] || { log "${1} is locked only until ${_date}"; return 1; }
+    log "locked ${1} (${_mode} until ${_date})"
+}
 
 # An empty list is always a mistake, and silently uploading nothing would look like success until
 # the day it matters.
@@ -135,12 +185,22 @@ for db in $databases; do
     aws --endpoint-url "$S3_ENDPOINT" s3 cp "$enc" "s3://${S3_BUCKET}/${key}" --only-show-errors \
         || { log "upload failed for '$db'"; failed=1; rm -f "$enc"; continue; }
     log "uploaded ${key} ($(wc -c < "$enc") bytes)"
+    # The dump is in the bucket either way; an unlocked one is still a failure, so that the
+    # heartbeat never vouches for backups the lock does not protect.
+    if [ -n "$OBJECT_LOCK_DAYS" ]; then
+        lock "$key" || failed=1
+    fi
 
     # A monthly copy on the 1st, kept far longer by the bucket's lifecycle rules.
     if [ "$day_of_month" = "01" ]; then
-        aws --endpoint-url "$S3_ENDPOINT" s3 cp "$enc" \
-            "s3://${S3_BUCKET}/monthly/${CLUSTER}/${DUMP_KIND}/${db}/${month}.${EXT}.${CRYPT_EXT}" --only-show-errors \
-            || { log "monthly copy failed for '$db'"; failed=1; }
+        monthly_key="monthly/${CLUSTER}/${DUMP_KIND}/${db}/${month}.${EXT}.${CRYPT_EXT}"
+        if aws --endpoint-url "$S3_ENDPOINT" s3 cp "$enc" "s3://${S3_BUCKET}/${monthly_key}" --only-show-errors; then
+            if [ -n "$OBJECT_LOCK_DAYS" ]; then
+                lock "$monthly_key" || failed=1
+            fi
+        else
+            log "monthly copy failed for '$db'"; failed=1
+        fi
     fi
     rm -f "$enc"
 done
