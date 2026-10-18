@@ -42,6 +42,8 @@ watching that URL therefore catches "the job silently stopped running", not just
 | `CLUSTER` | yes | used in the object key |
 | `WORKDIR` | no | scratch space, defaults to `/tmp` |
 | `HEARTBEAT_URL` | no | fetched once, only on complete success |
+| `OBJECT_LOCK_DAYS` | no | lock every uploaded version for this many days; see below |
+| `OBJECT_LOCK_MODE` | no | `COMPLIANCE` (default) or `GOVERNANCE` |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | yes | a key scoped to the backup bucket alone |
 
 Only the chosen scheme's variable is required, so neither consumer has to set the other's. The
@@ -60,6 +62,17 @@ and the value is as readable as the key itself:
 gpg --armor --export backup@example.com | base64 -w0
 ```
 
+
+With `OBJECT_LOCK_DAYS` set, each upload (daily and monthly) is locked explicitly: the script
+reads the version it just wrote, sets `OBJECT_LOCK_MODE` on that version until `OBJECT_LOCK_DAYS`
+from now, reads the lock back, and counts the database as failed, so no heartbeat, if the lock is
+missing, in another mode, or shorter (an hour of slack). A longer lock already on the version, such
+as the bucket's default, is kept: a COMPLIANCE lock cannot be shortened. The bucket must have been
+created with object lock, which also makes it versioned.
+
+The bucket's default retention would lock uploads without any of this, but it is not trusted:
+Hetzner Object Storage was seen applying it to only some uploads of the same kind, and an
+unlocked dump looks exactly like a locked one until someone tries to delete it.
 
 Object keys:
 
