@@ -33,7 +33,7 @@ ARG VERSION
 
 # The release tarball: backend, prebuilt frontend, collected static files, compiled translations,
 # and the hash-locked requirements. Updated with its sha256 by .github/workflows/app-downloads.yaml
-ARG PAPERLESS_SHA256=4b504178bd10e1e30a896a73a5594ec410ad43ec9f62f84db5c583ca190c4191
+ARG PAPERLESS_SHA256=114e10456e03106b0abefc6bac17335349d6db22fa7b80c2c2234a54746301fc
 
 ENV DEBIAN_FRONTEND=noninteractive
 
