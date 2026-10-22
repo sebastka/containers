@@ -67,9 +67,9 @@ ARG TARGETARCH
 
 # 7-Zip's own static Linux build, as 7zr for the Extractor plugin (.7z)
 # 7-Zip, UnRAR and DB-IP: updated with their sha256 by .github/workflows/app-downloads.yaml
-ARG SEVENZIP_VERSION=26.04
-ARG SEVENZIP_SHA256_AMD64=fc0327ba27e89bd086cf426dff17d77de582953cdbbc10a6576540a06853ffcd
-ARG SEVENZIP_SHA256_ARM64=5b0ac3aa91c1e3499f011d6af69d7f6b4de3ef2f011d9e2ff44c58ebd04aa388
+ARG SEVENZIP_VERSION=26.05
+ARG SEVENZIP_SHA256_AMD64=22cf82fcc6eb7474f1d5bb4f02c0f8ebd573a718089d6833dc30f8350a3b232e
+ARG SEVENZIP_SHA256_ARM64=0b71f6cfc34669b3bf69f2347efd3429f77020665003a13b9cdc53b784270421
 
 # UnRAR, built from RARLAB's source (their Linux binaries are x64 only), for the Extractor plugin
 # (.rar). The latest stable source: unrarsrc-7.3.x are 7.30 betas.
