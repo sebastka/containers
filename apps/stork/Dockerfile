@@ -6,12 +6,19 @@
 FROM dhi.io/alpine-base:3.24-dev@sha256:7182e0bc2f186386bb23bc0718508913450ba1876e93cf07e5e3cf263c4dbb63 AS build
 ARG VERSION
 
-# ISC publishes Stork to its own Cloudsmith repository; DHI's apk mirror does not carry it. The
-# branch is spelled out because these images ship no /etc/alpine-release to read it from, unlike
-# docker.io/library/alpine: keep it in step with the base image tag above.
+# ISC publishes Stork to its own Cloudsmith repository; DHI's apk mirror does not carry it. These
+# images ship no /etc/alpine-release to read the branch from, unlike docker.io/library/alpine, so
+# it is named here and checked against the base below. It stays an argument rather than being
+# derived outright: when a new Alpine lands before ISC has published for it, pinning the older
+# branch on purpose is the way out, and the check then states the mismatch instead of hiding it.
 ARG ALPINE_BRANCH=v3.24
 
 RUN set -eu; \
+    base_branch="$(sed -n 's|.*/alpine/\(v[0-9][0-9.]*\)/.*|\1|p' /etc/apk/repositories | head -1)"; \
+    [ -n "${base_branch}" ] \
+        || { echo "cannot read the Alpine branch from /etc/apk/repositories" >&2; exit 1; }; \
+    [ "${base_branch}" = "${ALPINE_BRANCH}" ] \
+        || { echo "ALPINE_BRANCH is ${ALPINE_BRANCH} but the base image is ${base_branch}: move the two together, or pin ALPINE_BRANCH on purpose if ISC has not published for ${base_branch} yet" >&2; exit 1; }; \
     wget -qO /etc/apk/keys/stork@isc-6914F776A579B428.rsa.pub \
         https://dl.cloudsmith.io/public/isc/stork/rsa.6914F776A579B428.key; \
     printf -- 'https://dl.cloudsmith.io/public/isc/stork/alpine/%s/main\n' "${ALPINE_BRANCH}" \
