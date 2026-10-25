@@ -33,7 +33,11 @@ group "default" {
 
 target "image" {
   inherits = ["docker-metadata-action"]
-  context   = "https://github.com/element-hq/element-admin.git#${COMMIT}"
+  // Upstream's tree as a named context, so the Dockerfile beside this file can build it: the
+  // default context stays local, which is where assets/entrypoint.sh comes from
+  contexts = {
+    src = "https://github.com/element-hq/element-admin.git#${COMMIT}"
+  }
   args = {
     VERSION = "${VERSION}"
   }
