@@ -29,7 +29,7 @@ Upstream's image instead carries two start-up scripts. Neither is here:
 server {
     listen 8080;                                  # the image exposes 8080
     root /dist;
-    index index.runtime.html index.html;          # runtime first, built page as the fallback
+    index index.html;
 
     gzip on;
     gzip_static on;                               # every asset has a .gz companion
@@ -45,6 +45,12 @@ server {
         add_header Cache-Control "no-cache";
         try_files $uri $uri/ /;
         include /etc/nginx/security_headers.conf;
+
+        # The runtime configuration, see below
+        sub_filter 'APP_CONFIG_PLACEHOLDER' 'ewogICJzZXJ2ZXJOYW1lIjogImV4YW1wbGUuY29tIgp9Cg==';
+        sub_filter_once on;
+        sub_filter_types text/html;
+        gzip_static off;
     }
     location = /health {
         default_type application/json;
@@ -63,20 +69,40 @@ Also shipped, for that block to include:
 | `/etc/nginx/security_headers.conf` | upstream's CSP, `X-Frame-Options`, `X-Content-Type-Options`, `X-Robots-Tag` |
 | `/etc/nginx/conf.d/http_customisations.conf` | upstream's `set_real_ip_from` and `real_ip_header`, minus their `server_tokens`, which the hardened `nginx.conf` already sets and nginx refuses to see twice |
 
-### The runtime configuration is still needed
+### The runtime configuration
 
-The built `index.html` contains a literal `APP_CONFIG_PLACEHOLDER`. Serve it unmodified and the app
-has no homeserver. Something in the deployment must do what `replace-config.sh` did:
+The built `index.html` contains `window.APP_CONFIG_BASE64 = "APP_CONFIG_PLACEHOLDER"`. Serve it
+unmodified and the app has no homeserver. Upstream's image replaced that from a start-up script;
+this one has no scripts, so the server block does it with `sub_filter`, as above. The value is
+base64 of the app's configuration:
 
 ```sh
-CONFIG=$(printf '{\n  "serverName": "%s"\n}\n' "$SERVER_NAME" | base64 -w 0)
-sed "s/APP_CONFIG_PLACEHOLDER/${CONFIG}/" /dist/index.html > /tmp/index.runtime.html
+printf '{\n  "serverName": "%s"\n}\n' example.com | base64 -w 0
 ```
 
-`/dist/index.runtime.html` is a symlink to `/tmp/index.runtime.html`, so writing that path is
-enough for the `index index.runtime.html index.html;` above to pick it up, and `/tmp` can stay the
-`emptyDir` a read-only root filesystem needs. An init container sharing that volume is the usual
-way; the alternative is serving a pre-rendered `index.html` of your own.
+**`gzip_static off` in that location is not optional.** Every file in `/dist` has a `.gz`
+companion, and `sub_filter` cannot rewrite a response nginx sends precompressed: with
+`gzip_static on`, `index.html.gz` goes out untouched and the placeholder reaches any client that
+accepts gzip, which is every browser. Turning it off for the HTML only costs the precompression of
+one 4 KB file — responses are still gzipped, just compressed per request, and `/assets` keeps its
+`.gz` files.
+
+A deployment that would rather pre-render the page can still do so: `/dist/index.runtime.html` is
+a symlink to `/tmp/index.runtime.html`, so an init container writing that path is picked up by
+`index index.runtime.html index.html;`, and `/tmp` can stay the `emptyDir` a read-only root
+filesystem needs. Do not pre-render it into a ConfigMap, though: `index.html` names the hashed
+asset bundles, so a copy stops matching the image on its next build and serves 404s for its own
+JavaScript with nothing failing a probe.
+
+### What nginx needs writable
+
+This nginx is compiled with `--pid-path=/run/nginx/nginx.pid` and its temp paths under
+`/var/lib/nginx/tmp`, not under `/tmp` as `nginx-unprivileged` was. On a read-only root filesystem
+both have to be writable or it will not start. Logs need nothing: `access.log` and `error.log` are
+already symlinks to `/dev/stdout` and `/dev/stderr`.
+
+Run it as **65532**, the image's own user. `/var/lib/nginx` is mode `0750` and owned by it, so
+another uid cannot even traverse in.
 
 ## Other differences from upstream's image
 

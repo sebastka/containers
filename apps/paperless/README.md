@@ -5,7 +5,8 @@
 (trixie) as upstream: built in `dhi.io/python:3.14-debian13-dev`, run on `dhi.io/python:3.14-debian13`
 (no shell, no package manager). Runs as `paperless` (1000), as upstream. Replaces `ghcr.io/paperless-ngx/paperless-ngx` without
 its s6 supervision: each container runs its own command, as the homelab manifests already do.
-About 1.4 GB uncompressed, against 2.5 GB for upstream's image.
+Roughly 57% the size of upstream's image: 2.01 GB uncompressed against 3.55 GB, measured on
+amd64 at 3.3.4. The absolute figures drift with every release, the ratio much less.
 
 ## Contents
 
