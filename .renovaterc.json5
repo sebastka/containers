@@ -138,6 +138,16 @@
       automerge: true,
       automergeType: "pr",
     },
+    {
+      // Paperless installs upstream's uv.lock as is, and it pins hiredis 3.3.0, which has no
+      // cp315 wheel; its sdist's setup.py calls SourceFileLoader.load_module, removed in Python
+      // 3.15 (#213). Lift this once paperless-ngx's lock moves to hiredis >= 3.5.0.
+      description: ["Hold Paperless on Python 3.14"],
+      matchDatasources: ["docker"],
+      matchFileNames: ["apps/paperless/Dockerfile"],
+      matchPackageNames: ["dhi.io/python"],
+      allowedVersions: "/^3\\.14\\./",
+    },
   ],
   // apps/deluge/requirements.txt is compiled by uv and pinned with hashes. The pip_requirements
   // manager rewrites a version in place but writes the new hashes out as a second entry, under the
