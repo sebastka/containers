@@ -7,7 +7,7 @@
 # jbig2enc, for OCRmyPDF's lossless JBIG2 optimisation: not in Debian. Built from its author's
 # release tag (paperless-ngx/builder only has 0.30 packages). Links Leptonica, which Tesseract
 # already brings into the image. Updated with its sha256 by .github/workflows/app-downloads.yaml
-FROM dhi.io/python:3.14.8-debian13-dev@sha256:ce0302a81b4f7e78b6ac935098f1aa8af8921fa2375fe2d1e9179df09b4bc90b AS jbig2enc
+FROM dhi.io/python:3.14.10-debian13-dev@sha256:d213b825a7e3514111e8738ba47e7365919802a40f84f34822b2b182cd58fe98 AS jbig2enc
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG JBIG2ENC_VERSION=0.32
 ARG JBIG2ENC_SHA256=5b3b1c48617e5b1608f916a78038ea867a2c9eb20c2ff34a78a48a243f655c2a
@@ -27,7 +27,7 @@ RUN \
     && /out/jbig2 --version
 
 
-FROM dhi.io/python:3.14.8-debian13-dev@sha256:ce0302a81b4f7e78b6ac935098f1aa8af8921fa2375fe2d1e9179df09b4bc90b AS build
+FROM dhi.io/python:3.14.10-debian13-dev@sha256:d213b825a7e3514111e8738ba47e7365919802a40f84f34822b2b182cd58fe98 AS build
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG VERSION
 
@@ -101,8 +101,8 @@ RUN \
 # fontconfig cache, the helper commands, and upstream's ImageMagick policy (resource limits, PDF
 # allowed, SVG/MVG/PostScript and URL delegates refused). Trixie has ImageMagick 7, which reads
 # /etc/ImageMagick-7: upstream's image still writes the policy to ImageMagick-6, where it is unused.
-COPY --from=dhi.io/python:3.14.8-debian13@sha256:17b857996add4968cb749df5f1676f1c9c048412636da3b85dc6660151892b47 /var/lib/dpkg /runtime-dpkg
-COPY --from=dhi.io/python:3.14.8-debian13@sha256:17b857996add4968cb749df5f1676f1c9c048412636da3b85dc6660151892b47 /etc/passwd /etc/group /runtime-etc/
+COPY --from=dhi.io/python:3.14.10-debian13@sha256:f2b6c1fc00a73758f90e2d93aa2924e88cb162ff153156670a7aa67cc97f1733 /var/lib/dpkg /runtime-dpkg
+COPY --from=dhi.io/python:3.14.10-debian13@sha256:f2b6c1fc00a73758f90e2d93aa2924e88cb162ff153156670a7aa67cc97f1733 /etc/passwd /etc/group /runtime-etc/
 COPY --from=jbig2enc /out/jbig2 /rootfs/usr/local/bin/jbig2
 RUN \
     python3 scripts/stage-packages.py /runtime-dpkg /rootfs ${RUNTIME_PACKAGES} \
@@ -121,7 +121,7 @@ RUN \
     && echo 'paperless:x:1000:' >> /rootfs/etc/group
 
 
-FROM dhi.io/python:3.14.8-debian13@sha256:17b857996add4968cb749df5f1676f1c9c048412636da3b85dc6660151892b47
+FROM dhi.io/python:3.14.10-debian13@sha256:f2b6c1fc00a73758f90e2d93aa2924e88cb162ff153156670a7aa67cc97f1733
 
 ENV PATH="/opt/paperless/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     PYTHONDONTWRITEBYTECODE=1 \
