@@ -33,11 +33,11 @@ ARG VERSION
 
 # The release tarball: backend, prebuilt frontend, collected static files, compiled translations,
 # and the hash-locked requirements. Updated with its sha256 by .github/workflows/app-downloads.yaml
-ARG PAPERLESS_SHA256=21adc0f1b9966605bde9d097b366ea65bd86ebe406b649e21cfe04356307a0c2
+ARG PAPERLESS_SHA256=2f16770417e1b1f3f74865cfb96bf4c696190d13751a11b0864f978df207aeff
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# What paperless runs besides Python (paperless 3.3 code, OCRmyPDF): see README.md. Not the
+# What paperless runs besides Python (paperless 3.4 code, OCRmyPDF): see README.md. Not the
 # PostgreSQL client (assets/paperless-wait-for-db), MariaDB, gosu, s6, or Tesseract languages
 # beyond English (assets/paperless-tessdata fetches them).
 ARG RUNTIME_PACKAGES="\
@@ -45,7 +45,6 @@ ARG RUNTIME_PACKAGES="\
     ghostscript \
     gpg \
     icc-profiles-free \
-    imagemagick-7.q16 \
     jbig2dec \
     libmagic1t64 \
     libpq5 \
@@ -73,7 +72,7 @@ RUN \
     && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
         > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
-    && apt-get install --yes --quiet --no-install-recommends fontconfig imagemagick xz-utils ${RUNTIME_PACKAGES} \
+    && apt-get install --yes --quiet --no-install-recommends fontconfig xz-utils ${RUNTIME_PACKAGES} \
     && dpkg-query -W -f '${Version}' libpq5 | grep -q '^18' \
     && fc-cache -f
 
@@ -89,7 +88,6 @@ RUN \
     && tar -xJf paperless.tar.xz -C /usr/src/paperless --strip-components=1 \
         paperless-ngx/src paperless-ngx/static paperless-ngx/uv.lock paperless-ngx/requirements.txt \
         paperless-ngx/docker/rootfs/usr/local/bin/wait-for-redis.py \
-        paperless-ngx/docker/rootfs/etc/ImageMagick-6/paperless-policy.xml \
     && python3 scripts/requirements.py /usr/src/paperless/uv.lock /usr/src/paperless/requirements.txt > requirements.install.txt \
     && python3 -m venv /opt/paperless \
     && /opt/paperless/bin/pip install --no-cache-dir --require-hashes --requirement requirements.install.txt \
@@ -98,16 +96,12 @@ RUN \
 
 # Everything the runtime image gets besides /opt/paperless and /usr/src/paperless, under /rootfs:
 # the packages above with their dependencies (minus what the runtime image has), jbig2enc, the
-# fontconfig cache, the helper commands, and upstream's ImageMagick policy (resource limits, PDF
-# allowed, SVG/MVG/PostScript and URL delegates refused). Trixie has ImageMagick 7, which reads
-# /etc/ImageMagick-7: upstream's image still writes the policy to ImageMagick-6, where it is unused.
+# fontconfig cache, and the helper commands.
 COPY --from=dhi.io/python:3.14.10-debian13@sha256:f2b6c1fc00a73758f90e2d93aa2924e88cb162ff153156670a7aa67cc97f1733 /var/lib/dpkg /runtime-dpkg
 COPY --from=dhi.io/python:3.14.10-debian13@sha256:f2b6c1fc00a73758f90e2d93aa2924e88cb162ff153156670a7aa67cc97f1733 /etc/passwd /etc/group /runtime-etc/
 COPY --from=jbig2enc /out/jbig2 /rootfs/usr/local/bin/jbig2
 RUN \
     python3 scripts/stage-packages.py /runtime-dpkg /rootfs ${RUNTIME_PACKAGES} \
-    && install -D -m 644 /usr/src/paperless/docker/rootfs/etc/ImageMagick-6/paperless-policy.xml \
-        /rootfs/etc/ImageMagick-7/policy.xml \
     && mkdir -p /rootfs/var/cache \
     && cp -a /var/cache/fontconfig /rootfs/var/cache/ \
     && install -D -m 755 /usr/src/paperless/docker/rootfs/usr/local/bin/wait-for-redis.py /rootfs/usr/local/bin/wait-for-redis.py \
