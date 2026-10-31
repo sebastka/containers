@@ -1,13 +1,18 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: ["github>home-operations/renovate-config"],
-  // No Helm charts in this repo, and Mend-hosted Renovate does not allow these commands
-  ignorePresets: ["github>home-operations/renovate-config:helmPostUpgradeTasks.json5"],
-  // The upstream preset sets prHourlyLimit: 1, which together with its
-  // schedule ("* 0-3 * * *") caps this repo at four new PRs a day and parks
-  // the rest in the dashboard's "Awaiting Schedule" section. Every update here
-  // is its own PR, so let them all open in the nightly window.
-  prHourlyLimit: 0,
+  // Only Renovate's built-in presets: the shared home-operations/renovate-config this used to
+  // extend was deleted upstream, which stopped every run. The policy it supplied is below.
+  // :disableRateLimiting, as every update here is its own PR.
+  extends: [
+    "config:recommended",
+    "docker:enableMajor",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":dependencyDashboard",
+    ":disableRateLimiting",
+    ":semanticCommits",
+  ],
+  // The existing dashboard issue (#2) is found by its title
+  dependencyDashboardTitle: "Renovate Dashboard 🤖",
   timezone: "Europe/Oslo",
   reviewers: [],
   reviewersFromCodeOwners: false,
@@ -52,15 +57,92 @@
     },
   },
   packageRules: [
+    // Commit messages, labels and groups. A later rule overrides an earlier one, so the app rules
+    // further down replace the type and scope for apps/.
+    {
+      description: ["Commit Messages"],
+      matchPackageNames: ["*"],
+      semanticCommitType: "chore",
+    },
+    {
+      matchUpdateTypes: ["major", "minor", "patch"],
+      commitMessageExtra: "({{currentVersion}} → {{newVersion}})",
+    },
+    {
+      matchUpdateTypes: ["digest"],
+      commitMessageExtra: "({{currentDigestShort}} → {{newDigestShort}})",
+    },
+    {
+      matchManagers: ["github-actions"],
+      semanticCommitScope: "github-action",
+      commitMessageTopic: "action {{depName}}",
+    },
+    {
+      matchManagers: ["mise"],
+      semanticCommitScope: "mise",
+      commitMessageTopic: "tool {{depName}}",
+    },
+    {
+      matchManagers: ["gomod"],
+      semanticCommitScope: "go",
+      commitMessageTopic: "module {{depName}}",
+    },
+    {
+      description: ["Update Type Labels"],
+      matchUpdateTypes: ["major"],
+      labels: ["type/major"],
+    },
+    {
+      matchUpdateTypes: ["minor"],
+      labels: ["type/minor"],
+    },
+    {
+      matchUpdateTypes: ["patch"],
+      labels: ["type/patch"],
+    },
+    {
+      matchUpdateTypes: ["digest", "pinDigest"],
+      labels: ["type/digest"],
+    },
+    {
+      // zer0ver: a 0.x minor can break at any time. Label it as a major and put it on its own
+      // major- branch, out of the group PRs below. Must come after the plain minor label.
+      description: ["Treat 0.x Minor Updates as Major"],
+      matchUpdateTypes: ["minor"],
+      matchCurrentVersion: "/^v?0\\./",
+      labels: ["type/major"],
+      additionalBranchPrefix: "major-",
+    },
+    {
+      description: ["GitHub Actions Group"],
+      matchManagers: ["github-actions"],
+      groupName: "github-actions",
+    },
+    {
+      // Toolchains after the catch-all, so their groupName wins
+      description: ["Mise Tools Group"],
+      matchManagers: ["mise"],
+      groupName: "mise tools",
+      groupSlug: "mise-tools",
+    },
+    {
+      description: ["Go Toolchain Group"],
+      matchManagers: ["mise"],
+      matchDepNames: ["go"],
+      groupName: "Go toolchain",
+      groupSlug: "go-toolchain",
+    },
+    {
+      description: ["Node Toolchain Group"],
+      matchManagers: ["mise"],
+      matchDepNames: ["node"],
+      groupName: "Node toolchain",
+      groupSlug: "node-toolchain",
+    },
     {
       description: ["Strip the apk build suffix from Cloudsmith stork versions"],
       matchDatasources: ["custom.stork"],
       extractVersion: "^(?<version>\\d+\\.\\d+\\.\\d+)\\.",
-    },
-    {
-      description: ["Drop the minimum release age set by the upstream groups preset"],
-      matchManagers: ["github-actions", "mise"],
-      minimumReleaseAge: null,
     },
     {
       description: ["Release Rules for App Updates"],
@@ -109,9 +191,8 @@
       automergeType: "pr",
     },
     {
-      // The upstream preset treats a 0.x minor as a breaking change: it labels
-      // it type/major and routes it onto the major- branch prefix. Keep those
-      // out of the blanket rule above so they still get looked at by hand.
+      // A 0.x minor is treated as a major (see above): keep those out of the
+      // blanket rule above so they still get looked at by hand.
       description: ["Do Not Auto-merge 0.x Minor Updates"],
       matchUpdateTypes: ["minor"],
       matchCurrentVersion: "/^v?0\\./",
