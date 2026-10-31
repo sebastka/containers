@@ -51,15 +51,6 @@
       transformTemplates: ['{"releases": $distinct($[name="{{packageName}}"].{"version": version})}'],
     },
   },
-  hostRules: [
-    {
-      description: "Docker Hardened Images (dhi.io), base of apps/deluge. DHI authenticates with Docker Hub accounts: a Docker Hub token, as a Renovate secret",
-      matchHost: "dhi.io",
-      hostType: "docker",
-      username: "sebastka",
-      password: "{{ secrets.DOCKERHUB_TOKEN }}",
-    },
-  ],
   packageRules: [
     {
       description: ["Strip the apk build suffix from Cloudsmith stork versions"],
