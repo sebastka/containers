@@ -25,9 +25,8 @@ amd64 at 3.3.4. The absolute figures drift with every release, the ratio much le
   `psycopg-c` wheel needs it. With Debian's 17, upstream's image silently falls back to psycopg's
   pure-Python implementation; here it uses the C one.
 - **What paperless and OCRmyPDF run**: Tesseract (English and orientation detection; other
-  languages through `paperless-tessdata`), Ghostscript, ImageMagick 7 (with upstream's policy:
-  resource limits, PDF allowed, SVG/MVG/PostScript and URL delegates refused), poppler-utils, qpdf,
-  unpaper, pngquant, jbig2dec, libmagic, gpg, Liberation fonts. Installed with apt in the build
+  languages through `paperless-tessdata`), Ghostscript, poppler-utils, qpdf, unpaper, pngquant,
+  jbig2dec, libmagic, gpg, Liberation fonts. Installed with apt in the build
   image, then copied with their dependencies, minus what the runtime image has
   (`scripts/stage-packages.py`), with their dpkg status entries for scanners.
 - **jbig2enc**, built from its author's release (`agl/jbig2enc`), for OCRmyPDF's lossless JBIG2.

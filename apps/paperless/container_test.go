@@ -15,8 +15,7 @@ func Test(t *testing.T) {
 	helpers.RequireCommandSucceeds(t, image, nil, "/opt/paperless/bin/python", "-c", `
 import os, shutil, sqlite3, subprocess, sys, tempfile
 
-for command in (["tesseract", "--version"], ["gs", "--version"], ["convert", "-version"],
-                ["qpdf", "--version"], ["pdftotext", "-v"], ["pdftoppm", "-v"], ["unpaper", "--version"],
+for command in (["tesseract", "--version"], ["gs", "--version"], ["qpdf", "--version"], ["pdftotext", "-v"], ["pdftoppm", "-v"], ["unpaper", "--version"],
                 ["pngquant", "--version"], ["jbig2", "--version"], ["gpg", "--version"]):
     if not shutil.which(command[0]):
         sys.exit(f"{command[0]} not on PATH")
