@@ -77,8 +77,8 @@ ARG UNRAR_VERSION=7.2.3
 ARG UNRAR_SHA256=3995af0aa32b1505a566da053725551a1f0698dc42b2fdf7ba7d65db0d004e33
 
 # DB-IP's IP to Country Lite (CC BY 4.0, https://db-ip.com), from its publisher. Monthly releases.
-ARG DBIP_MONTH=2026-10
-ARG DBIP_SHA256=4cd44536ddfd40fec7eca94a233f7d19f38d470e6522e653cb8d27001f5fe177
+ARG DBIP_MONTH=2026-11
+ARG DBIP_SHA256=75fe430010f6d38a8c4331c202bf0df6ce3221a6e6d823b9e5a6d951e4cf9758
 
 # python-3.14-dev: lets zope.interface build its C extension rather than fall back to pure Python
 RUN apk add --no-cache build-base curl libarchive-tools patch patchelf python-3.14-dev tzdata xz
