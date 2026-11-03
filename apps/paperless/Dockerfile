@@ -97,8 +97,8 @@ RUN \
 # Everything the runtime image gets besides /opt/paperless and /usr/src/paperless, under /rootfs:
 # the packages above with their dependencies (minus what the runtime image has), jbig2enc, the
 # fontconfig cache, and the helper commands.
-COPY --from=dhi.io/python:3.14.10-debian13@sha256:62b05a613f5a59e0ea78fff2b6131ce4264d0c7371c54134a34732beeb657e47 /var/lib/dpkg /runtime-dpkg
-COPY --from=dhi.io/python:3.14.10-debian13@sha256:62b05a613f5a59e0ea78fff2b6131ce4264d0c7371c54134a34732beeb657e47 /etc/passwd /etc/group /runtime-etc/
+COPY --from=dhi.io/python:3.14.10-debian13@sha256:c6740d52b3be0da241be3af4f2c4b016d3fc7f997dd3b15ac9dc5f8254c0a07b /var/lib/dpkg /runtime-dpkg
+COPY --from=dhi.io/python:3.14.10-debian13@sha256:c6740d52b3be0da241be3af4f2c4b016d3fc7f997dd3b15ac9dc5f8254c0a07b /etc/passwd /etc/group /runtime-etc/
 COPY --from=jbig2enc /out/jbig2 /rootfs/usr/local/bin/jbig2
 RUN \
     python3 scripts/stage-packages.py /runtime-dpkg /rootfs ${RUNTIME_PACKAGES} \
@@ -115,7 +115,7 @@ RUN \
     && echo 'paperless:x:1000:' >> /rootfs/etc/group
 
 
-FROM dhi.io/python:3.14.10-debian13@sha256:62b05a613f5a59e0ea78fff2b6131ce4264d0c7371c54134a34732beeb657e47
+FROM dhi.io/python:3.14.10-debian13@sha256:c6740d52b3be0da241be3af4f2c4b016d3fc7f997dd3b15ac9dc5f8254c0a07b
 
 ENV PATH="/opt/paperless/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     PYTHONDONTWRITEBYTECODE=1 \
