@@ -7,7 +7,7 @@
 # jbig2enc, for OCRmyPDF's lossless JBIG2 optimisation: not in Debian. Built from its author's
 # release tag (paperless-ngx/builder only has 0.30 packages). Links Leptonica, which Tesseract
 # already brings into the image. Updated with its sha256 by .github/workflows/app-downloads.yaml
-FROM dhi.io/python:3.14.10-debian13-dev@sha256:e41db2192776cc39dbf3bbd210b4f9a6ee4f863c550ed85a25d39ec8002794a0 AS jbig2enc
+FROM dhi.io/python:3.14.10-debian13-dev@sha256:ea998331def4a8134f70ae63d2d57835ad8311c0af217208cb8ffc4ac354df67 AS jbig2enc
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG JBIG2ENC_VERSION=0.32
 ARG JBIG2ENC_SHA256=5b3b1c48617e5b1608f916a78038ea867a2c9eb20c2ff34a78a48a243f655c2a
@@ -27,7 +27,7 @@ RUN \
     && /out/jbig2 --version
 
 
-FROM dhi.io/python:3.14.10-debian13-dev@sha256:e41db2192776cc39dbf3bbd210b4f9a6ee4f863c550ed85a25d39ec8002794a0 AS build
+FROM dhi.io/python:3.14.10-debian13-dev@sha256:ea998331def4a8134f70ae63d2d57835ad8311c0af217208cb8ffc4ac354df67 AS build
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG VERSION
 
