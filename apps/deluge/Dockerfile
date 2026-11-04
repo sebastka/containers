@@ -150,7 +150,7 @@ RUN \
         /rootfs/usr/local/bin/bsdtar /rootfs/usr/local/bin/bsdunzip /rootfs/usr/lib/archive-tools/*
 
 
-FROM dhi.io/python:3.14.10-alpine3.24@sha256:6ad5c66045e23b4c9fd04b94f8b8b5e395fffb1cf313f7238871a20096ec68f9
+FROM dhi.io/python:3.14.10-alpine3.24@sha256:810bb103e1f1271ce8dd6f6988522d81a9694d409fda5d6cea1b4f40739f0f34
 
 ENV DELUGE_BIN="deluged" \
     XDG_CONFIG_HOME="/config" \
