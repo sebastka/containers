@@ -185,8 +185,8 @@
       automergeType: "pr",
     },
     {
-      description: ["Auto-merge All Minor and Digest Updates"],
-      matchUpdateTypes: ["minor", "digest", "pinDigest"],
+      description: ["Auto-merge All Patch, Minor and Digest Updates"],
+      matchUpdateTypes: ["patch", "minor", "digest", "pinDigest"],
       automerge: true,
       automergeType: "pr",
     },
