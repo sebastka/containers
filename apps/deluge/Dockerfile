@@ -7,7 +7,7 @@
 # developed against (it requires >= 1.2, and also runs on 2.1). PyPI only has musl wheels of 2.1, up
 # to Python 3.13. Boost.Python, libtorrent and the C++ runtime are linked statically into the
 # binding, which then only needs musl and the runtime image's OpenSSL.
-FROM dhi.io/python:3.14.10-alpine3.24-dev@sha256:cf6b196ee7d8376891ab7c49449fbf8325d942347b03712b682fd249b95877fc AS libtorrent
+FROM dhi.io/python:3.14.10-alpine3.24-dev@sha256:2bc2980183964d12631d0788f2f52440360f1a83b68e4c5c9f0810dacb33571b AS libtorrent
 
 # Updated with their sha256 by .github/workflows/app-downloads.yaml
 ARG BOOST_VERSION=1.92.0
@@ -61,7 +61,7 @@ RUN \
     && PYTHONPATH=/out python3 -c 'import libtorrent; print("libtorrent", libtorrent.__version__)'
 
 
-FROM dhi.io/python:3.14.10-alpine3.24-dev@sha256:cf6b196ee7d8376891ab7c49449fbf8325d942347b03712b682fd249b95877fc AS build
+FROM dhi.io/python:3.14.10-alpine3.24-dev@sha256:2bc2980183964d12631d0788f2f52440360f1a83b68e4c5c9f0810dacb33571b AS build
 ARG VERSION
 ARG TARGETARCH
 
