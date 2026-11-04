@@ -7,7 +7,7 @@
 #
 # Unlike upstream's image this one has no start-up scripts: it serves the built assets and a
 # placeholder server block, and the deployment supplies the real one. See README.md.
-FROM dhi.io/node:26-alpine3.24-dev@sha256:4f971dcdc1fdf59f9d3e84dbd529690c2d15f75ae898fb310acad9c12d7bbdf9 AS build
+FROM dhi.io/node:26-alpine3.24-dev@sha256:55a43de6cf72eae6fa3059eb8d0007e2d8ed2b18679f25d70de751fdff8736d5 AS build
 ARG VERSION
 
 ENV PNPM_HOME="/pnpm" \
