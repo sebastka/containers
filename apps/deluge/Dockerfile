@@ -15,9 +15,12 @@ ARG BOOST_SHA256=ea7b982002cc9dfbe59b0b217b206f470dc75f3de0bb2973d844118934d8241
 ARG LIBTORRENT_VERSION=2.0.15
 ARG LIBTORRENT_SHA256=5e2e79129823b7ea48721164c32b5aaf83d3fd733b5502100f6705b29f27bb02
 
-# python-3.14-dev: the headers of the image's own Python, from DHI's apk repository (the -dev
-# image does not include them)
-RUN apk add --no-cache build-base cmake curl linux-headers openssl-dev python-3.14-dev xz
+# python-X.Y-dev: the headers of the image's own Python, from DHI's apk repository (the -dev
+# image does not include them). The version is asked of the interpreter rather than written out:
+# spelled out, it stops matching the day the base image moves, and apk then installs a second
+# Python that conflicts with the image's own over cmd:python (#267).
+RUN apk add --no-cache build-base cmake curl linux-headers openssl-dev \
+    "python-$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')-dev" xz
 
 WORKDIR /src
 RUN \
@@ -80,8 +83,10 @@ ARG UNRAR_SHA256=3995af0aa32b1505a566da053725551a1f0698dc42b2fdf7ba7d65db0d004e3
 ARG DBIP_MONTH=2026-11
 ARG DBIP_SHA256=75fe430010f6d38a8c4331c202bf0df6ce3221a6e6d823b9e5a6d951e4cf9758
 
-# python-3.14-dev: lets zope.interface build its C extension rather than fall back to pure Python
-RUN apk add --no-cache build-base curl libarchive-tools patch patchelf python-3.14-dev tzdata xz
+# python-X.Y-dev, read from the interpreter as above: lets zope.interface build its C extension
+# rather than fall back to pure Python
+RUN apk add --no-cache build-base curl libarchive-tools patch patchelf \
+    "python-$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')-dev" tzdata xz
 
 WORKDIR /build
 COPY . .
