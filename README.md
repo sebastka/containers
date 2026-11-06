@@ -22,4 +22,6 @@ Each app has a README covering what differs from upstream's image and anything a
 
 `container_test.go` runs on pull requests, on a native runner for each platform in the matrix, against the image loaded into that runner's daemon. The release path skips it: by then the change has already passed on its pull request, and the image is pushed by digest rather than loaded.
 
+That matrix is the apps a pull request touches, so a pull request that changes the test harness itself — `go.mod`, `go.sum` or `tests/` — would otherwise run none of these tests at all. It builds two apps instead, chosen because they reach every helper between them.
+
 Versions come from Renovate where a datasource can supply them, and from `.github/workflows/app-downloads.yaml` where one cannot — a pinned download needs its checksum updating in the same commit, which no datasource provides.
