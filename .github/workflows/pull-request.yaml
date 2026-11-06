@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      changed-files: ${{ steps.changed-files.outputs.all_changed_files }}
+      apps: ${{ steps.apps.outputs.apps }}
     steps:
       # changed-files diffs against the merge base, so it needs full history.
       - name: Checkout
@@ -40,8 +40,37 @@ jobs:
           json: true
           path: apps
 
+      # container_test.go is the only thing that uses testcontainers-go, and it runs only for an
+      # app the matrix below names. A pull request that changes the harness but nothing under
+      # apps/ would otherwise report success with every test it affects skipped (#276).
+      - name: Get changed test harness
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        id: harness
+        with:
+          files: |
+            go.mod
+            go.sum
+            tests/**
+
+      - name: Apps to build
+        id: apps
+        env:
+          CHANGED_APPS: ${{ steps.changed-files.outputs.all_changed_files }}
+          HARNESS_CHANGED: ${{ steps.harness.outputs.any_changed }}
+        run: |-
+          # Two apps rather than all nine: between them they reach every helper -- dbdump2s3 the
+          # environment customiser, zabbix-web-nginx the HTTP wait strategy, the file check and
+          # the command check -- and both build in seconds.
+          apps="${CHANGED_APPS}"
+          if [[ "${HARNESS_CHANGED}" == 'true' ]]; then
+              apps="$(jq -c '. + ["dbdump2s3", "zabbix-web-nginx"] | unique' <<< "${apps}")"
+          fi
+
+          echo "apps=${apps}" >> "$GITHUB_OUTPUT"
+          echo "Apps to build: ${apps}" >> "$GITHUB_STEP_SUMMARY"
+
   build:
-    if: ${{ needs.prepare.outputs.changed-files != '[]' }}
+    if: ${{ needs.prepare.outputs.apps != '[]' }}
     name: Build ${{ matrix.app }}
     needs:
       - prepare
@@ -57,7 +86,7 @@ jobs:
       DHI_TOKEN: ${{ secrets.DHI_TOKEN }}
     strategy:
       matrix:
-        app: ${{ fromJSON(needs.prepare.outputs.changed-files) }}
+        app: ${{ fromJSON(needs.prepare.outputs.apps) }}
       fail-fast: false
       max-parallel: 4
     with:
