@@ -5,7 +5,7 @@
 #
 # Both carry the frontend: nginx serves the static assets from its copy and php-fpm executes from
 # its own, so neither needs a shared volume. About 60 MB duplicated for one less moving part.
-FROM dhi.io/alpine-base:3.24-dev@sha256:7182e0bc2f186386bb23bc0718508913450ba1876e93cf07e5e3cf263c4dbb63 AS build
+FROM dhi.io/alpine-base:3.24-dev@sha256:52a1dd05ab0348e71cf244d595d9ce59268c68ac3fdd6338c18997fe035b36a7 AS build
 ARG VERSION
 
 # Updated with VERSION by .github/workflows/app-downloads.yaml
