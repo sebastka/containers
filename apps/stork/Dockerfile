@@ -3,7 +3,7 @@
 # Stork on Docker Hardened Images: installed in the -dev variant (apk, shell), run on the runtime
 # variant, which has no package manager. Both Stork binaries and the LDAP hook link musl and
 # nothing else, so the runtime image gets files only, with no library closure to carry.
-FROM dhi.io/alpine-base:3.24-dev@sha256:7182e0bc2f186386bb23bc0718508913450ba1876e93cf07e5e3cf263c4dbb63 AS build
+FROM dhi.io/alpine-base:3.24-dev@sha256:52a1dd05ab0348e71cf244d595d9ce59268c68ac3fdd6338c18997fe035b36a7 AS build
 ARG VERSION
 
 # ISC publishes Stork to its own Cloudsmith repository; DHI's apk mirror does not carry it. These
