@@ -6,7 +6,7 @@
 # Docker Hardened Images publish no FPM SAPI -- dhi.io/php ships the CLI only -- so php-fpm and
 # its extensions come from Alpine's community repository, added below. The base layers are still
 # the hardened ones; the PHP packages are stock Alpine.
-FROM dhi.io/alpine-base:3.24-dev@sha256:7182e0bc2f186386bb23bc0718508913450ba1876e93cf07e5e3cf263c4dbb63 AS build
+FROM dhi.io/alpine-base:3.24-dev@sha256:52a1dd05ab0348e71cf244d595d9ce59268c68ac3fdd6338c18997fe035b36a7 AS build
 ARG VERSION
 
 # Updated with VERSION by .github/workflows/app-downloads.yaml
