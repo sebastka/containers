@@ -19,9 +19,16 @@ WORKDIR /app
 COPY --from=src . .
 
 # corepack ships with this image, so pnpm comes from the version the repo asks for in its
-# packageManager field rather than whatever is newest
+# packageManager field rather than whatever is newest.
+#
+# --no-runtime: upstream's devEngines.runtime asks pnpm to download its own Node when the one in
+# use does not satisfy the range, and pnpm fetches it whether or not it is needed. What it fetches
+# is nodejs.org's glibc build, which cannot run here -- this image is musl, so the binary dies on
+# its missing ELF interpreter and vite exits 127 with "node: not found" (#288). The flag leaves it
+# unfetched and unlinked, and the build runs on this image's own Node, which is the version the
+# range asked for anyway.
 RUN corepack enable \
-    && pnpm install --frozen-lockfile \
+    && pnpm install --frozen-lockfile --no-runtime \
     && pnpm run build
 
 # Pre-compressed copies for nginx's gzip_static. find, not the `dist/**/*` upstream writes: that
