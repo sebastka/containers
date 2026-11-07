@@ -44,7 +44,6 @@ server {
         # The runtime configuration, see below
         sub_filter 'APP_CONFIG_PLACEHOLDER' 'ewogICJzZXJ2ZXJOYW1lIjogImV4YW1wbGUuY29tIgp9Cg==';
         sub_filter_once on;
-        sub_filter_types text/html;
         gzip_static off;
     }
     location = /health {
@@ -70,6 +69,8 @@ The built `index.html` contains `window.APP_CONFIG_BASE64 = "APP_CONFIG_PLACEHOL
 ```sh
 printf '{\n  "serverName": "%s"\n}\n' example.com | base64 -w 0
 ```
+
+There is deliberately no `sub_filter_types`: nginx applies `sub_filter` to `text/html` already, and the directive adds types *in addition* to it, so naming `text/html` there earns a `duplicate MIME type "text/html"` warning on every start and changes nothing.
 
 **`gzip_static off` in that location is not optional.** Every file in `/dist` has a `.gz` companion, and `sub_filter` cannot rewrite a response nginx sends precompressed: with `gzip_static on`, `index.html.gz` goes out untouched and the placeholder reaches any client that accepts gzip, which is every browser. Turning it off for the HTML only costs the precompression of one 4 KB file — responses are still gzipped, just compressed per request, and `/assets` keeps its `.gz` files.
 
