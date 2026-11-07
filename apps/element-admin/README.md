@@ -84,3 +84,11 @@ Run it as **65532**, the image's own user. `/var/lib/nginx` is mode `0750` and o
 ## Other differences from upstream's image
 
 **Pre-compression.** Upstream writes `gzip -k /app/dist/**/*`, which needs bash; under `/bin/sh` that glob reaches one level deep and leaves nested assets uncompressed. This uses `find`, so every file gets a `.gz` companion for `gzip_static`.
+
+**A favicon.** Upstream has none: it draws its logo inline in `src/components/logo.tsx` and ships no icon file anywhere, so nothing in `dist/` answers the `/favicon.ico` every browser asks for unprompted, and the request falls through `try_files` to `index.html` — HTML, where an image was expected. The `favicon` build stage lifts the square mark out of that component with `scripts/extract-logo.py` and rasterises it to `/dist/favicon.ico` at 16, 32 and 48 px. No `<link rel="icon">` is added: browsers fetch that path on their own.
+
+It is recoloured on the way out, because Element's mark is a green disc and a tab of this beside a tab of Element itself would otherwise be the same icon twice. The disc takes Element's dark background and the arcs take the green — the same mark at 16 px, not mistakable for it. `FAVICON_DISC` and `FAVICON_ARCS` are build arguments, so a deployment that would rather have the original can pass `--build-arg FAVICON_DISC='#0DBD8B' --build-arg FAVICON_ARCS=white`.
+
+The extraction stops the build rather than guess. JSX is not SVG — attributes are camelCase and `{...props}` is not one — so the script converts what it knows and fails on anything it does not: a renamed component, an unfamiliar attribute, an interpolated value, fewer paths than the mark has, or a fill that is no longer Element's green. A favicon that quietly became a blank square would otherwise ship unnoticed.
+
+The rasteriser and the ICO tool come from upstream Alpine's community repository, since the hardened apk mirror carries neither. That happens in a stage of its own, built on the same pinned `dhi.io/python` image the other apps use, and only the finished `.ico` is copied out of it.
