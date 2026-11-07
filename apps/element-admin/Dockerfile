@@ -7,6 +7,45 @@
 #
 # Unlike upstream's image this one has no start-up scripts: it serves the built assets and a
 # placeholder server block, and the deployment supplies the real one. See README.md.
+# The favicon, which upstream does not have: it draws its logo inline in a React component and
+# ships no icon file anywhere, so the built dist/ has nothing to answer a browser's automatic
+# request for /favicon.ico. scripts/extract-logo.py lifts the square mark out of that component --
+# and stops the build rather than guess if it can no longer find it -- and this stage rasterises
+# it. The rasteriser and the ICO tool are not in the hardened apk mirror, so they come from
+# upstream Alpine's community repository; nothing from this stage but the .ico reaches the image.
+FROM dhi.io/python:3.15.2-alpine3.24-dev@sha256:d720c079f1804263cf0609a51ccd71428e2b0e8e050cf1b924cd05abc6f1acf1 AS favicon
+ARG ALPINE_BRANCH=v3.24
+
+RUN set -eu; \
+    base_branch="$(sed -n 's|.*/alpine/\(v[0-9][0-9.]*\)/.*|\1|p' /etc/apk/repositories | head -1)"; \
+    [ -n "${base_branch}" ] || { echo "cannot read the Alpine branch from /etc/apk/repositories" >&2; exit 1; }; \
+    [ "${base_branch}" = "${ALPINE_BRANCH}" ] \
+        || { echo "ALPINE_BRANCH is ${ALPINE_BRANCH} but the base image is on ${base_branch}" >&2; exit 1; }; \
+    printf -- 'https://dl-cdn.alpinelinux.org/alpine/%s/community\n' "${ALPINE_BRANCH}" \
+        >>/etc/apk/repositories; \
+    apk add --no-cache icoutils rsvg-convert
+
+COPY scripts/extract-logo.py /extract-logo.py
+# src is a named build context from docker-bake.hcl, not a stage, which hadolint cannot see
+# hadolint ignore=DL3022
+COPY --from=src src/components/logo.tsx /logo.tsx
+
+# Recoloured on the way out: Element's own mark is a green disc, and a tab of this next to a tab
+# of Element itself would be the same icon twice. The disc takes Element's dark background and the
+# arcs take the green, which reads as the same mark at 16 px without being mistaken for it.
+ARG FAVICON_DISC="#1B1D22"
+ARG FAVICON_ARCS="#0DBD8B"
+
+# 16, 32 and 48 px: what a browser picks between for a tab, a bookmark and a desktop shortcut
+RUN set -eu; \
+    python3 /extract-logo.py /logo.tsx /favicon.svg --disc "${FAVICON_DISC}" --arcs "${FAVICON_ARCS}"; \
+    for size in 16 32 48; do \
+        rsvg-convert --width "${size}" --height "${size}" --output "/favicon-${size}.png" /favicon.svg; \
+    done; \
+    icotool --create --output /favicon.ico /favicon-16.png /favicon-32.png /favicon-48.png; \
+    icotool --list /favicon.ico
+
+
 FROM dhi.io/node:26-alpine3.24-dev@sha256:d17376f42ae43fae1792e91f7e8490c9696a5c5309c99befd99648d03769db57 AS build
 ARG VERSION
 
@@ -35,6 +74,8 @@ RUN corepack enable \
 # glob needs bash and only reaches one level deep under /bin/sh, leaving nested assets
 # uncompressed. The symlink is upstream's: a server block can point index at index.runtime.html
 # and have a deployment write the configured page to /tmp, on a read-only root filesystem.
+COPY --from=favicon /favicon.ico dist/favicon.ico
+
 RUN find dist -type f ! -name '*.gz' -exec gzip -9 -k {} + \
     && ln -s /tmp/index.runtime.html dist/
 
