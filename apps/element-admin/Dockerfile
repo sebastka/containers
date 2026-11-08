@@ -46,7 +46,7 @@ RUN set -eu; \
     icotool --list /favicon.ico
 
 
-FROM dhi.io/node:26-alpine3.24-dev@sha256:7eb8c79103b8393deacfb4659a2ac34af19a2f399eb828bf9ef81cc557cd191a AS build
+FROM dhi.io/node:26-alpine3.24-dev@sha256:3e61a81f5d83780aff01cb2d8f2251698bf3fe7d522bef71a9656fa93333b504 AS build
 ARG VERSION
 
 ENV PNPM_HOME="/pnpm" \
