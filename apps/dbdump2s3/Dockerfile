@@ -6,7 +6,7 @@
 # Alpine 3.24, not older: pg_dump refuses to dump a server newer than itself. Alpine 3.22 tops out
 # at postgresql17-client and 3.23 was the first branch to carry postgresql18-client, so moving the
 # base image backwards silently breaks every PostgreSQL backup.
-FROM docker.io/library/alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4
+FROM docker.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 ARG VERSION
 
 # The apk packages are deliberately not version-pinned (DL3018 is off repo-wide). An Alpine branch
