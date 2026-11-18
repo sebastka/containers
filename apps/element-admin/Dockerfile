@@ -13,7 +13,7 @@
 # and stops the build rather than guess if it can no longer find it -- and this stage rasterises
 # it. The rasteriser and the ICO tool are not in the hardened apk mirror, so they come from
 # upstream Alpine's community repository; nothing from this stage but the .ico reaches the image.
-FROM dhi.io/python:3.15.2-alpine3.24-dev@sha256:0bb115e0b8c9d3e6856915aa45eb3108245dcc15c3b103e7b19ee703278376f1 AS favicon
+FROM dhi.io/python:3.15.2-alpine3.24-dev@sha256:978e20203094aa330648ca1b680e1768e0f53777d56018595553da9a847218c5 AS favicon
 ARG ALPINE_BRANCH=v3.24
 
 RUN set -eu; \
