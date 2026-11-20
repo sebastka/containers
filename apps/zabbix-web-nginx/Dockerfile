@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 
 # The Zabbix frontend's nginx half. Upstream runs nginx and php-fpm together in one container under
 # supervisord; here they are two, and the PHP one is zabbix-web-php.
