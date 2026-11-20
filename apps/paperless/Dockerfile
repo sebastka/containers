@@ -57,9 +57,10 @@ ARG RUNTIME_PACKAGES="\
     tesseract-ocr-osd \
     unpaper"
 
-# libpq 18 from PostgreSQL's own repository (apt.postgresql.org): paperless's prebuilt psycopg-c
-# wheel needs it (PQfullProtocolVersion), and Debian trixie has 17. Upstream's image has 17, so
-# psycopg there falls back to its pure-Python implementation; here it uses the C one.
+# libpq 18 or newer from PostgreSQL's own repository (apt.postgresql.org): paperless's prebuilt
+# psycopg-c wheel needs it (PQfullProtocolVersion, added in 18), and Debian trixie has 17.
+# Upstream's image has 17, so psycopg there falls back to its pure-Python implementation; here it
+# uses the C one.
 ARG PGDG_KEY_FINGERPRINT=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 
 # hadolint ignore=DL3008
@@ -73,7 +74,7 @@ RUN \
         > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
     && apt-get install --yes --quiet --no-install-recommends fontconfig xz-utils ${RUNTIME_PACKAGES} \
-    && dpkg-query -W -f '${Version}' libpq5 | grep -q '^18' \
+    && dpkg --compare-versions "$(dpkg-query -W -f '${Version}' libpq5)" ge 18 \
     && fc-cache -f
 
 WORKDIR /build
