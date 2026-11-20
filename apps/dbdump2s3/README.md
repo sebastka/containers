@@ -4,8 +4,8 @@ Logical backups of PostgreSQL and MariaDB servers. One dump per database, encryp
 
 - age: https://github.com/FiloSottile/age
 - GnuPG: https://gnupg.org/documentation/
-- Alpine `postgresql18-client`: https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/postgresql18-client
-- Alpine `mariadb-client`: https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/mariadb-client
+- PostgreSQL client, from PostgreSQL's own apt repository: https://wiki.postgresql.org/wiki/Apt
+- MariaDB client, from MariaDB's own apt repository: https://mariadb.org/download/
 
 ## What it does, and why
 
@@ -77,6 +77,8 @@ For MariaDB, pipe the decryption through `xz -d` into `mariadb --host=… --user
 
 ## Pinning
 
-The base image is pinned by tag and digest. The apk packages deliberately are not: an Alpine branch carries one version of each package and drops it as soon as a patched one replaces it, so `age=1.3.1-r6` would turn a security update into a failed build. The base digest is the pin, and Renovate bumping it is what pulls patched packages in.
+The base image is pinned by tag and digest. The apt packages deliberately are not: a suite carries one version of each package and replaces it as soon as a patched one lands, so `age=1.2.1-1` would turn a security update into a failed build. The base digest is the pin, and Renovate bumping it is what pulls patched packages in.
 
-Alpine 3.24 is a floor, not a preference. `pg_dump` refuses to dump a server newer than itself; 3.22 tops out at `postgresql17-client` and 3.23 was the first branch with `postgresql18-client`. `container_test.go` asserts the client is 18 or newer so a base image moving backwards fails the build instead of the backup.
+**The database clients come from the projects, not from Debian.** `pg_dump` refuses to dump a server newer than itself, and no Alpine branch carries a PostgreSQL 19 client — not 3.24, not edge — which is why this image is Debian: PostgreSQL and MariaDB both publish apt repositories and neither publishes apk ones. Each repository's key is checked by fingerprint before anything is installed from it.
+
+`postgresql-client` is the metapackage, so it follows the newest major in that repository and needs no edit when PostgreSQL 20 arrives. The build asserts the floor with `dpkg --compare-versions` and `container_test.go` asserts it again on the finished image, so a repository that silently failed to apply — leaving Debian's 17, which cannot dump a 19 server — fails the build rather than the backup. The MariaDB series is `MARIADB_SERIES`, pinned to a major; its packages carry `+maria` in the version, which is what the build checks to tell them from Debian's own `mariadb-client`.

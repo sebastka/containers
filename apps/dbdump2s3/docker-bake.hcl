@@ -7,7 +7,7 @@ variable "APP" {
 variable "VERSION" {
   // First-party: there is no upstream release to track, so the date of the build is the version.
   // The weekly rebuild in .github/workflows/release.yaml is what rolls it, which is also what
-  // pulls patched Alpine packages in behind the pinned base digest.
+  // pulls patched Debian packages in behind the pinned base digest.
   default = formatdate("YYYY.M.D", timestamp())
 }
 
@@ -20,8 +20,8 @@ variable "DESCRIPTION" {
 }
 
 variable "LICENSES" {
-  // The script in this repository. The Alpine packages it ships -- gnupg, the database
-  // clients, aws-cli -- keep their own licences, as any base image's contents do.
+  // The script in this repository. The packages it ships -- gnupg, the database clients,
+  // aws-cli -- keep their own licences, as any base image's contents do.
   default = "MIT"
 }
 

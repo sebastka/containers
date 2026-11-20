@@ -20,10 +20,21 @@ func Test(t *testing.T) {
 	helpers.RequireCommandSucceeds(t, image, nil, "xz", "--version")
 	helpers.RequireCommandSucceeds(t, image, nil, "curl", "--version")
 
-	// pg_dump refuses to dump a server newer than itself, so a base image that moved backwards to
-	// postgresql17-client has to fail here rather than at 03:00
+	// pg_dump refuses to dump a server newer than itself, so a client that moved backwards -- the
+	// pgdg repository silently not applying, leaving Debian's 17 -- has to fail here, not at 03:00
 	helpers.RequireCommandSucceeds(t, image, nil, "sh", "-c",
-		`pg_dump --version | grep -qE ' (1[89]|[2-9][0-9])\.'`)
+		`set -e
+		major=$(pg_dump --version | sed -n 's/.*PostgreSQL) \([0-9]*\).*/\1/p')
+		[ -n "$major" ] && [ "$major" -ge 19 ] || { echo "pg_dump is $(pg_dump --version)"; exit 1; }`)
+
+	// Debian ships a mariadb-client of its own, so this checks the dump tool is MariaDB's own
+	// build and not that one, which trails it
+	helpers.RequireCommandSucceeds(t, image, nil, "sh", "-c",
+		`set -e
+		version=$(mariadb-dump --version)
+		echo "$version" | grep -q -- '-MariaDB' || { echo "not MariaDB's client: $version"; exit 1; }
+		major=$(echo "$version" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-MariaDB' | head -1 | cut -d. -f1)
+		[ -n "$major" ] && [ "$major" -ge 13 ] || { echo "mariadb-dump is $version"; exit 1; }`)
 
 	// Missing configuration is refused, not treated as a backup of nothing
 	helpers.RequireCommandSucceeds(t, image, nil, "sh", "-c",
