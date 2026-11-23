@@ -29,7 +29,7 @@ RUN set -eu; \
         isc-stork-server-hook-ldap=~"${VERSION}"
 
 # The runtime image's own accounts, to append to rather than replace
-COPY --from=dhi.io/alpine-base:3.24@sha256:6278da77eb7e000c38b95711f93d199b2eb108e371a9eb95fb67b911c1f5e2cd /etc/passwd /etc/group /runtime-etc/
+COPY --from=dhi.io/alpine-base:3.24@sha256:57418c4becf58042c76a2efeb74c1b402e58249289348579c9f04d3669a8b35b /etc/passwd /etc/group /runtime-etc/
 
 # Everything the runtime image gets, staged under /rootfs. The package's pre-install script cannot
 # create the account here, since DHI's busybox has no getent, so it is written out instead -- with
@@ -49,7 +49,7 @@ RUN set -eu; \
     install -d -o 100 -g 101 /rootfs/var/lib/stork-server
 
 
-FROM dhi.io/alpine-base:3.24@sha256:6278da77eb7e000c38b95711f93d199b2eb108e371a9eb95fb67b911c1f5e2cd
+FROM dhi.io/alpine-base:3.24@sha256:57418c4becf58042c76a2efeb74c1b402e58249289348579c9f04d3669a8b35b
 
 COPY --from=build /rootfs/ /
 
