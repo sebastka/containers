@@ -93,7 +93,7 @@ RUN set -eu; \
 
 # The account, written out rather than created: this busybox has no getent, and these are the ids
 # upstream uses and the homelab Deployment pins with runAsUser 1997 / runAsGroup 1995
-COPY --from=dhi.io/alpine-base:3.24@sha256:6278da77eb7e000c38b95711f93d199b2eb108e371a9eb95fb67b911c1f5e2cd /etc/passwd /etc/group /runtime-etc/
+COPY --from=dhi.io/alpine-base:3.24@sha256:57418c4becf58042c76a2efeb74c1b402e58249289348579c9f04d3669a8b35b /etc/passwd /etc/group /runtime-etc/
 RUN set -eu; \
     install -d /rootfs/etc; \
     cp /runtime-etc/passwd /runtime-etc/group /rootfs/etc/; \
@@ -102,7 +102,7 @@ RUN set -eu; \
     install -d -o 1997 -g 1995 /rootfs/var/lib/zabbix
 
 
-FROM dhi.io/alpine-base:3.24@sha256:6278da77eb7e000c38b95711f93d199b2eb108e371a9eb95fb67b911c1f5e2cd
+FROM dhi.io/alpine-base:3.24@sha256:57418c4becf58042c76a2efeb74c1b402e58249289348579c9f04d3669a8b35b
 
 COPY --from=build /rootfs/ /
 
