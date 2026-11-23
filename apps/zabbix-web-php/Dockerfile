@@ -51,7 +51,7 @@ COPY assets/php-fpm.conf /src/php-fpm.conf
 
 # Everything the runtime image gets, under /rootfs: the FPM binary, the extensions and the ini
 # files that load them, the frontend, and the libraries the loader reports for each.
-COPY --from=dhi.io/alpine-base:3.24@sha256:6278da77eb7e000c38b95711f93d199b2eb108e371a9eb95fb67b911c1f5e2cd /etc/passwd /etc/group /runtime-etc/
+COPY --from=dhi.io/alpine-base:3.24@sha256:57418c4becf58042c76a2efeb74c1b402e58249289348579c9f04d3669a8b35b /etc/passwd /etc/group /runtime-etc/
 RUN set -eu; \
     install -D -m 755 /usr/sbin/php-fpm85 /rootfs/usr/sbin/php-fpm85; \
     install -d /rootfs/usr/lib/php85/modules /rootfs/etc/php85/conf.d; \
@@ -78,7 +78,7 @@ RUN set -eu; \
     while read -r lib; do install -D -m 755 "${lib}" "/rootfs${lib}"; done </tmp/needed.txt
 
 
-FROM dhi.io/alpine-base:3.24@sha256:6278da77eb7e000c38b95711f93d199b2eb108e371a9eb95fb67b911c1f5e2cd
+FROM dhi.io/alpine-base:3.24@sha256:57418c4becf58042c76a2efeb74c1b402e58249289348579c9f04d3669a8b35b
 
 COPY --from=build /rootfs/ /
 
