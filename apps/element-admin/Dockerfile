@@ -93,7 +93,7 @@ RUN set -eu; \
     cp docker/security_headers.conf /rootfs/etc/nginx/security_headers.conf
 
 
-FROM dhi.io/nginx:1-alpine3.24@sha256:8f759926203e4ec4efd10f20beb92451db5d9d980846657440c53292e32ac52e
+FROM dhi.io/nginx:1-alpine3.24@sha256:d319254f901133993ea3308d9266f29dada690b0bd20ea756b6d18d6fb99a0da
 
 COPY --from=build /app/dist /dist
 COPY --from=build /rootfs/ /
