@@ -12,8 +12,8 @@ FROM dhi.io/python:3.15.2-alpine3.24-dev@sha256:b36d9c60e2463329ec96bde24f64c5c3
 # Updated with their sha256 by .github/workflows/app-downloads.yaml
 ARG BOOST_VERSION=1.93.0.beta1
 ARG BOOST_SHA256=b34092b2967223351e9d0b9199546463c85ecb6e6aa70b4ea69d2b1f7d316416
-ARG LIBTORRENT_VERSION=2.0.15
-ARG LIBTORRENT_SHA256=5e2e79129823b7ea48721164c32b5aaf83d3fd733b5502100f6705b29f27bb02
+ARG LIBTORRENT_VERSION=2.0.16
+ARG LIBTORRENT_SHA256=8463b8d786141c3923dbf54ab34e5c3312af9913b591239cb0e30f66ead34b9b
 
 # python-X.Y-dev: the headers of the image's own Python, from DHI's apk repository (the -dev
 # image does not include them). The version is asked of the interpreter rather than written out:
