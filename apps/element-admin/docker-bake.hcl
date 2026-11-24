@@ -6,7 +6,7 @@ variable "APP" {
 
 variable "COMMIT" {
   // renovate: datasource=git-refs depName=https://github.com/element-hq/element-admin branch=main
-  default = "75cc4f7f2fbb1ea5bca0d14f74a70dd9416d4de5"
+  default = "3d34716b88f5720bf2218460cb17c194debfbb43"
 }
 
 variable "VERSION" {
