@@ -32,7 +32,7 @@ RUN set -eu; \
         -type f ! -name '*.gz' -exec gzip -9 -k {} +
 
 
-FROM dhi.io/nginx:1-alpine3.24@sha256:8f759926203e4ec4efd10f20beb92451db5d9d980846657440c53292e32ac52e
+FROM dhi.io/nginx:1-alpine3.24@sha256:d319254f901133993ea3308d9266f29dada690b0bd20ea756b6d18d6fb99a0da
 
 COPY --from=build /rootfs/ /
 COPY assets/default.conf /etc/nginx/conf.d/default.conf
