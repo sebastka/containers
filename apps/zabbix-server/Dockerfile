@@ -6,7 +6,7 @@
 #
 # The image carries no entrypoint: it ships zabbix_server and the schema, and the chart renders
 # zabbix_server.conf and loads the schema. See README.md.
-FROM dhi.io/alpine-base:3.24-dev@sha256:7e00fc0f6f9f84303dc2657aac557bdefe9877a66c388c0521c5794d51056efa AS build
+FROM dhi.io/alpine-base:3.24-dev@sha256:ab3130d401f94092d65c15d38566fbffdba1b4fe0f766968003535cdddf6d2e0 AS build
 ARG VERSION
 
 # Updated with VERSION by .github/workflows/app-downloads.yaml
