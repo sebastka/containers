@@ -33,7 +33,7 @@ func Test(t *testing.T) {
 		done`)
 
 	helpers.RequireCommandSucceeds(t, image, nil, "sh", "-c",
-		`/usr/sbin/zabbix_server -V | grep -qE '^zabbix_server \(Zabbix\) 7\.'`)
+		`/usr/sbin/zabbix_server -V | grep -qE '^zabbix_server \(Zabbix\) 8\.'`)
 
 	// net-snmp resolves textual OIDs, which is how Zabbix's own SNMP templates are written, only
 	// from these. They come with net-snmp-libs in the build stage and are easy to leave behind.

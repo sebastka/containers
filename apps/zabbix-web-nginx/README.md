@@ -2,8 +2,8 @@
 
 The nginx half of the Zabbix web interface: serves the static assets and hands `.php` to [zabbix-web-php](../zabbix-web-php). Upstream runs both in one container under supervisord.
 
-- Zabbix documentation: https://www.zabbix.com/documentation/7.4/
-- Upstream's image: https://github.com/zabbix/zabbix-docker/tree/7.4/Dockerfiles/web-nginx-pgsql
+- Zabbix documentation: https://www.zabbix.com/documentation/8.0/
+- Upstream's image: https://github.com/zabbix/zabbix-docker/tree/8.0/Dockerfiles/web-nginx-pgsql
 
 Built from the same verified source tarball as [zabbix-server](../zabbix-server). Assets are pre-compressed for `gzip_static`; the `.php` files are not, since nginx never sends their contents.
 

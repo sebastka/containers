@@ -7,7 +7,7 @@ variable "APP" {
 variable "VERSION" {
   // The Zabbix source release. Updated with ZABBIX_SHA256 in the Dockerfile by
   // .github/workflows/app-downloads.yaml: Renovate has no datasource that yields the checksum
-  default = "7.4.16"
+  default = "8.0.0"
 }
 
 variable "SOURCE" {

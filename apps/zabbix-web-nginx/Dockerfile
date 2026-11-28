@@ -9,7 +9,7 @@ FROM dhi.io/alpine-base:3.24-dev@sha256:ab3130d401f94092d65c15d38566fbffdba1b4fe
 ARG VERSION
 
 # Updated with VERSION by .github/workflows/app-downloads.yaml
-ARG ZABBIX_SHA256=0e2c391dc184acce8e34250e7326a51e19c8bcee31e67b8497f5526247ecd261
+ARG ZABBIX_SHA256=55469ac599fd1443370ecf4288655d4d62109ad3a686711c4f3e0d428338ca77
 
 RUN apk add --no-cache curl
 
