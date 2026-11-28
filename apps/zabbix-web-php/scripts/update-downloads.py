@@ -6,7 +6,7 @@ Run by .github/workflows/app-downloads.yaml, which turns the changes into a pull
 runnable by hand from the repository root. Standard library only. Renovate cannot do this: the
 source tarball's checksum comes from a file beside it, which no datasource yields.
 
-Stays on the branch the pin is already on, 7.4.x while VERSION is a 7.4: Zabbix minor releases are
+Stays on the branch the pin is already on, 8.0.x while VERSION is an 8.0: Zabbix minor releases are
 feature releases with their own support windows, so moving between them is a decision rather than
 an update. Change VERSION by hand to move branch.
 """

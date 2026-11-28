@@ -2,7 +2,7 @@
 
 Zabbix server for PostgreSQL on [Docker Hardened Images](https://hub.docker.com/hardened-images): compiled in `dhi.io/alpine-base:3.24-dev`, run on `dhi.io/alpine-base:3.24`, which has no package manager.
 
-- Zabbix documentation: https://www.zabbix.com/documentation/7.4/
+- Zabbix documentation: https://www.zabbix.com/documentation/8.0/
 - Upstream's images: https://github.com/zabbix/zabbix-docker
 - Source releases: https://cdn.zabbix.com/zabbix/sources/stable/
 
@@ -44,4 +44,4 @@ securityContext:
 
 ## Versions
 
-`docker-bake.hcl` holds the release and the Dockerfile its checksum; `scripts/update-downloads.py` moves both together, nightly, since no Renovate datasource yields a checksum. It stays on the branch the pin is already on — 7.4.x while VERSION is a 7.4 — because Zabbix minor releases are feature releases with their own support windows. Change `VERSION` by hand to move branch.
+`docker-bake.hcl` holds the release and the Dockerfile its checksum; `scripts/update-downloads.py` moves both together, nightly, since no Renovate datasource yields a checksum. It stays on the branch the pin is already on — 8.0.x while VERSION is an 8.0 — because Zabbix minor releases are feature releases with their own support windows. Change `VERSION` by hand to move branch.
